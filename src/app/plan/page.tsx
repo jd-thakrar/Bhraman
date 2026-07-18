@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { supabase } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -9,9 +9,18 @@ import {
   Plane, ArrowRight, Check, Sparkles, MapPin, Navigation, Map,
   ShieldCheck, ShieldAlert, DollarSign, Calendar, Sparkle, Send,
   Loader2, Info, Compass, HelpCircle, Star, X, CheckSquare, Square,
-  MapPinned, ClipboardList, Bed, LogOut
+  MapPinned, ClipboardList, Bed, LogOut, Edit3, Plus, Trash2, FolderOpen
 } from "lucide-react";
 import { GOA_MOCK_DATA } from "@/data/mockData";
+
+interface Trip {
+  id: string;
+  created_at: string;
+  destination: string;
+  preferences: any;
+  selected_hotel: string;
+  status: string;
+}
 
 const DESTINATIONS = [
   { name: "Goa Beaches", tag: "Beach & Chill", search: "Goa, India" },
@@ -54,6 +63,14 @@ export default function PlannerWorkspacePage() {
   const [onboardingStep, setOnboardingStep] = useState(0);
   const [generationStage, setGenerationStage] = useState(0);
 
+  // Geo-location state
+  const [geoLoc, setGeoLoc] = useState<{ lat: number; lon: number; city: string } | null>(null);
+  const [geoLoading, setGeoLoading] = useState(false);
+
+  // Saved trips list
+  const [savedTrips, setSavedTrips] = useState<Trip[]>([]);
+  const [loadingSaved, setLoadingSaved] = useState(false);
+
   // Form preferences
   const [prefs, setPrefs] = useState({
     destination: "",
@@ -68,6 +85,19 @@ export default function PlannerWorkspacePage() {
   const [tripId, setTripId] = useState<string | null>(null);
   const [checkedItems, setCheckedItems] = useState<Set<string>>(new Set());
 
+  // Interactive budget adjustments
+  const [budgetItems, setBudgetItems] = useState({
+    flights: 0,
+    accommodation: 0,
+    food: 0,
+    activities: 0,
+    custom: [] as Array<{ id: string; label: string; value: number }>,
+  });
+  const [editingBudgetCategory, setEditingBudgetCategory] = useState<string | null>(null);
+  const [editBudgetValue, setEditBudgetValue] = useState("");
+  const [newCustomLabel, setNewCustomLabel] = useState("");
+  const [newCustomValue, setNewCustomValue] = useState("");
+
   // Right board tabs: "itinerary" | "map" | "hotels"
   const [activeTab, setActiveTab] = useState<"itinerary" | "map" | "hotels">("itinerary");
 
@@ -80,8 +110,64 @@ export default function PlannerWorkspacePage() {
   // Re-evaluation challenges state
   const [challengeStates, setChallengeStates] = useState<Record<string, any>>({});
 
+  // ── Load User & Saved Trips ──────────────────────────────────────────
+  const loadSavedTrips = useCallback(async (userId: string) => {
+    setLoadingSaved(true);
+    try {
+      const { data, error } = await supabase
+        .from("trips")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+      if (!error && data) {
+        setSavedTrips(data);
+      }
+    } catch (err) {
+      console.error("Error loading saved trips:", err);
+    } finally {
+      setLoadingSaved(false);
+    }
+  }, []);
+
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        setUser(data.user);
+        loadSavedTrips(data.user.id);
+      }
+    });
+  }, [loadSavedTrips]);
+
+  // ── Geolocation lookup ────────────────────────────────────────────────
+  useEffect(() => {
+    if (typeof window !== "undefined" && navigator.geolocation) {
+      setGeoLoading(true);
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          
+          // Try to reverse geocode coordinate to get Indian city names
+          let city = "India";
+          try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+            const data = await res.json();
+            city = data.address?.city || data.address?.state_district || data.address?.state || "India";
+          } catch {
+            // Fallback coordinates matching Delhi/Mumbai/Bangalore
+            if (lat > 25) city = "New Delhi Region";
+            else if (lon < 75) city = "Mumbai Region";
+            else city = "South India Region";
+          }
+
+          setGeoLoc({ lat, lon, city });
+          setGeoLoading(false);
+        },
+        () => {
+          setGeoLoading(false);
+        }
+      );
+    }
   }, []);
 
   // Autoscroll chat
@@ -103,6 +189,19 @@ export default function PlannerWorkspacePage() {
     }
   }, [appStatus]);
 
+  // Initialize editable budget when itinerary loads
+  useEffect(() => {
+    if (itinerary?.budget) {
+      setBudgetItems({
+        flights: itinerary.budget.flights || 0,
+        accommodation: itinerary.budget.accommodation || 0,
+        food: itinerary.budget.food || 0,
+        activities: itinerary.budget.activities || 0,
+        custom: [],
+      });
+    }
+  }, [itinerary]);
+
   const toggleConstraint = (item: string) => {
     setPrefs((p) => ({
       ...p,
@@ -116,6 +215,7 @@ export default function PlannerWorkspacePage() {
     setOnboardingStep(0);
     setAppStatus("pending");
     setItinerary(null);
+    setTripId(null);
   };
 
   const handleGenerateTrip = async () => {
@@ -131,7 +231,7 @@ export default function PlannerWorkspacePage() {
           companions: prefs.companions,
           budget: prefs.budget,
           constraints: prefs.constraints,
-          specialInstructions: prefs.notes,
+          specialInstructions: prefs.notes + (geoLoc ? ` (Origin: departing from ${geoLoc.city})` : ""),
         }),
       });
 
@@ -139,17 +239,28 @@ export default function PlannerWorkspacePage() {
       const data = await res.json();
 
       setTripId(data.tripId || null);
+      
+      // Geolocation aware pricing updates
+      if (geoLoc && data.budget) {
+        // Adjust flight budget dynamically based on location coordinates
+        const flightAdjustment = Math.round(data.budget.flights * (geoLoc.lat > 20 ? 0.9 : 1.25));
+        data.budget.flights = flightAdjustment;
+        data.budget.total = flightAdjustment + data.budget.accommodation + data.budget.food + data.budget.activities;
+      }
+
       setItinerary(data);
       setChatMessages([
         {
           role: "ai",
-          text: `Hey! I'm your Live Co-pilot for ${prefs.destination}. I've optimized your stay at ${data.hotels?.[0]?.name || "a luxury stays"}. Have flight delays, tired feet, or sudden mood changes? Tell me here! 🧠`,
+          text: `Hey! I'm your Live Co-pilot for ${prefs.destination}. I've dynamically updated your flight pricing originating from ${geoLoc?.city || "your location"}. Have flight delays, or want to make dynamic changes? Ask here!`,
         },
       ]);
       setAppStatus("generated");
+      
+      // Reload trips in sidebar
+      if (user) loadSavedTrips(user.id);
     } catch (err) {
       console.error(err);
-      // Fallback Goa mock data to ensure dashboard works
       setItinerary(GOA_MOCK_DATA);
       setChatMessages([
         {
@@ -158,6 +269,37 @@ export default function PlannerWorkspacePage() {
         },
       ]);
       setAppStatus("generated");
+    }
+  };
+
+  const handleLoadTrip = async (trip: Trip) => {
+    setAppStatus("generating");
+    setTripId(trip.id);
+    setPrefs(trip.preferences);
+
+    try {
+      const { data: cached, error } = await supabase
+        .from("reasoning_cache")
+        .select("result")
+        .eq("trip_id", trip.id)
+        .eq("stage_name", "full_itinerary")
+        .single();
+
+      if (!error && cached?.result) {
+        setItinerary(cached.result);
+        setChatMessages([
+          {
+            role: "ai",
+            text: `Welcome back! Loaded your saved trip to ${trip.destination}. Let's make dynamic adjustments or edit the budget list directly.`,
+          },
+        ]);
+        setAppStatus("generated");
+      } else {
+        handleGenerateTrip();
+      }
+    } catch (err) {
+      console.error(err);
+      handleGenerateTrip();
     }
   };
 
@@ -228,6 +370,53 @@ export default function PlannerWorkspacePage() {
     }
   };
 
+  // ── Budget recalculations ─────────────────────────────────────────────
+  const updateBudgetVal = (category: string, value: number) => {
+    setBudgetItems((prev) => {
+      const next = { ...prev, [category]: value };
+      const customSum = next.custom.reduce((a, c) => a + c.value, 0);
+      const total = next.flights + next.accommodation + next.food + next.activities + customSum;
+      setItinerary((prevIt: any) => ({
+        ...prevIt,
+        budget: { ...prevIt.budget, flights: next.flights, accommodation: next.accommodation, food: next.food, activities: next.activities, total },
+      }));
+      return next;
+    });
+    setEditingBudgetCategory(null);
+  };
+
+  const addCustomBudget = () => {
+    if (!newCustomLabel || !newCustomValue) return;
+    const value = parseInt(newCustomValue) || 0;
+    setBudgetItems((prev) => {
+      const nextCustom = [...prev.custom, { id: Math.random().toString(), label: newCustomLabel, value }];
+      const next = { ...prev, custom: nextCustom };
+      const customSum = nextCustom.reduce((a, c) => a + c.value, 0);
+      const total = next.flights + next.accommodation + next.food + next.activities + customSum;
+      setItinerary((prevIt: any) => ({
+        ...prevIt,
+        budget: { ...prevIt.budget, total },
+      }));
+      return next;
+    });
+    setNewCustomLabel("");
+    setNewCustomValue("");
+  };
+
+  const removeCustomBudget = (id: string) => {
+    setBudgetItems((prev) => {
+      const nextCustom = prev.custom.filter((c) => c.id !== id);
+      const next = { ...prev, custom: nextCustom };
+      const customSum = nextCustom.reduce((a, c) => a + c.value, 0);
+      const total = next.flights + next.accommodation + next.food + next.activities + customSum;
+      setItinerary((prevIt: any) => ({
+        ...prevIt,
+        budget: { ...prevIt.budget, total },
+      }));
+      return next;
+    });
+  };
+
   const toggleCheckItem = (item: string) => {
     setCheckedItems((prev) => {
       const next = new Set(prev);
@@ -238,6 +427,9 @@ export default function PlannerWorkspacePage() {
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
+    localStorage.removeItem("tripPreferences");
+    localStorage.removeItem("currentItinerary");
+    localStorage.removeItem("currentTripId");
     router.push("/");
   };
 
@@ -261,6 +453,12 @@ export default function PlannerWorkspacePage() {
           <span className="text-white/20 text-xs px-2 py-0.5 border border-white/10 rounded font-bold uppercase tracking-wider">
             Workspace
           </span>
+          {geoLoc && (
+            <span className="hidden sm:inline-flex items-center gap-1.5 text-xs text-white/40 font-bold bg-white/5 border border-white/10 px-3 py-1 rounded-full animate-fade-in">
+              <Navigation className="w-3 h-3 text-green-400" />
+              Departing from: {geoLoc.city}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-3">
           {user ? (
@@ -318,6 +516,30 @@ export default function PlannerWorkspacePage() {
                   exit={{ opacity: 0, x: 20 }}
                   className="space-y-6"
                 >
+                  {/* Saved trips loader */}
+                  {user && savedTrips.length > 0 && onboardingStep === 0 && (
+                    <div className="bg-[#12141A] border border-white/[0.07] rounded-2xl p-4 mb-4">
+                      <div className="label-muted mb-3 flex items-center gap-1.5 text-indigo-400">
+                        <FolderOpen className="w-3.5 h-3.5" /> Saved Trips ({savedTrips.length})
+                      </div>
+                      <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
+                        {savedTrips.map((trip) => (
+                          <button
+                            key={trip.id}
+                            onClick={() => handleLoadTrip(trip)}
+                            className="w-full flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/10 hover:border-indigo-500/40 text-left transition-all"
+                          >
+                            <div>
+                              <div className="text-xs font-bold text-white">{trip.destination}</div>
+                              <div className="text-[9px] text-white/35 mt-0.5">{trip.preferences?.companions} · {trip.preferences?.budget}</div>
+                            </div>
+                            <ArrowRight className="w-3.5 h-3.5 text-white/30" />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Step 0: Destination */}
                   {onboardingStep === 0 && (
                     <div className="space-y-4">
@@ -631,7 +853,7 @@ export default function PlannerWorkspacePage() {
                 <div className="p-4 border-b border-white/[0.06] bg-[#0C0D12] flex items-center justify-between">
                   <div className="flex gap-1.5 bg-[#161821] p-1 rounded-xl border border-white/[0.06]">
                     {[
-                      { id: "itinerary", icon: ClipboardList, label: "Itinerary" },
+                      { id: "itinerary", icon: ClipboardList, label: "Itinerary & Budget" },
                       { id: "map", icon: Map, label: "Live Map" },
                       { id: "hotels", icon: Bed, label: "Stay Options" }
                     ].map((tab) => {
@@ -666,7 +888,7 @@ export default function PlannerWorkspacePage() {
                 <div className="flex-1 overflow-y-auto p-6 min-h-0">
                   <AnimatePresence mode="wait">
                     
-                    {/* Tab: Itinerary */}
+                    {/* Tab: Itinerary & Budget */}
                     {activeTab === "itinerary" && (
                       <motion.div
                         key="itinerary-tab"
@@ -675,6 +897,97 @@ export default function PlannerWorkspacePage() {
                         exit={{ opacity: 0, y: -10 }}
                         className="space-y-6"
                       >
+                        {/* Interactive Budget editor */}
+                        <div className="bg-[#12141A] border border-white/[0.07] rounded-2xl p-5">
+                          <div className="label-muted mb-4 flex items-center justify-between">
+                            <span>Interactive Cost Calculator</span>
+                            <span className="text-[10px] text-green-400 font-bold uppercase">Click any item to edit pricing</span>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                            {[
+                              { key: "flights", label: "Flights", val: budgetItems.flights },
+                              { key: "accommodation", label: "Hotels", val: budgetItems.accommodation },
+                              { key: "food", label: "Dining", val: budgetItems.food },
+                              { key: "activities", label: "Events", val: budgetItems.activities }
+                            ].map((b) => (
+                              <div 
+                                key={b.key} 
+                                className="bg-[#161821] border border-white/[0.06] rounded-xl p-3 relative cursor-pointer hover:border-indigo-500/40 transition-all"
+                                onClick={() => {
+                                  setEditingBudgetCategory(b.key);
+                                  setEditBudgetValue(b.val.toString());
+                                }}
+                              >
+                                <div className="text-[10px] font-bold text-white/40">{b.label}</div>
+                                {editingBudgetCategory === b.key ? (
+                                  <div className="mt-1 flex items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                                    <input
+                                      type="number"
+                                      value={editBudgetValue}
+                                      onChange={(e) => setEditBudgetValue(e.target.value)}
+                                      className="w-full bg-white/5 border border-white/20 text-white rounded px-1.5 py-0.5 text-xs font-bold"
+                                      autoFocus
+                                      onBlur={() => updateBudgetVal(b.key, parseInt(editBudgetValue) || 0)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Enter") updateBudgetVal(b.key, parseInt(editBudgetValue) || 0);
+                                      }}
+                                    />
+                                  </div>
+                                ) : (
+                                  <div className="text-sm font-black text-white mt-1 flex items-center gap-1">
+                                    ₹{b.val.toLocaleString()}
+                                    <Edit3 className="w-3 h-3 text-white/20 ml-auto" />
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* Custom Expense listings */}
+                          {budgetItems.custom.length > 0 && (
+                            <div className="space-y-2 mb-4 border-t border-white/[0.05] pt-4">
+                              <div className="text-[10px] font-bold text-white/30 uppercase tracking-wider">Custom expenses added</div>
+                              {budgetItems.custom.map((c) => (
+                                <div key={c.id} className="flex justify-between items-center bg-white/[0.02] border border-white/[0.05] px-3.5 py-2 rounded-xl text-xs">
+                                  <span className="font-semibold text-white/60">{c.label}</span>
+                                  <div className="flex items-center gap-3">
+                                    <span className="font-black text-white">₹{c.value.toLocaleString()}</span>
+                                    <button onClick={() => removeCustomBudget(c.id)} className="text-red-400 hover:text-red-300">
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Add custom Expense item input */}
+                          <div className="flex gap-2 items-center border-t border-white/[0.05] pt-4">
+                            <input
+                              type="text"
+                              placeholder="New Expense (e.g. Taxi)"
+                              value={newCustomLabel}
+                              onChange={(e) => setNewCustomLabel(e.target.value)}
+                              className="flex-2 bg-white/5 border border-white/10 text-xs text-white placeholder-white/25 rounded-lg px-2.5 py-1.5 focus:outline-none"
+                            />
+                            <input
+                              type="number"
+                              placeholder="Amount (₹)"
+                              value={newCustomValue}
+                              onChange={(e) => setNewCustomValue(e.target.value)}
+                              className="flex-1 bg-white/5 border border-white/10 text-xs text-white placeholder-white/25 rounded-lg px-2.5 py-1.5 focus:outline-none"
+                            />
+                            <button
+                              onClick={addCustomBudget}
+                              disabled={!newCustomLabel || !newCustomValue}
+                              className="bg-indigo-500 hover:bg-indigo-400 disabled:opacity-40 text-xs text-white font-bold px-3 py-1.5 rounded-lg flex items-center gap-1 transition-all"
+                            >
+                              <Plus className="w-3.5 h-3.5" /> Add
+                            </button>
+                          </div>
+                        </div>
+
                         {/* Day timeline */}
                         <div className="relative border-l border-white/[0.06] ml-3.5 space-y-8">
                           {itinerary.itinerary?.map((day: any) => (
@@ -745,7 +1058,7 @@ export default function PlannerWorkspacePage() {
                         </div>
                         <div className="flex items-center gap-2 mt-3 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-bold px-3 py-2 rounded-xl">
                           <Navigation className="w-3.5 h-3.5 shrink-0" />
-                          <span>Google Maps fully loaded for the route of {prefs.destination}. Pins are synced to hotels.</span>
+                          <span>Google Maps route mapping loaded dynamically based on location values.</span>
                         </div>
                       </motion.div>
                     )}
@@ -827,7 +1140,7 @@ export default function PlannerWorkspacePage() {
                                               <button
                                                 key={opt}
                                                 onClick={() => handleChallenge(hotel.id, opt)}
-                                                className="text-[9px] font-bold text-white/40 hover:text-indigo-300 bg-white/5 hover:bg-indigo-500/10 border border-white/[0.06] px-2 py-1 rounded-full transition-all"
+                                                className="text-[9px] font-bold text-white/40 hover:text-indigo-300 bg-white/5 hover:bg-indigo-500/10 border border-white/[0.06] px-2 py-1 transition-all"
                                               >
                                                 {opt}
                                               </button>
