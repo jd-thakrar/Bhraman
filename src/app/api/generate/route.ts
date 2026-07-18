@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
     await ensureSchema();
 
     const body = await req.json();
-    const { destination, companions, budget, constraints, specialInstructions, tripId } = body;
+    const { destination, companions, budget, budgetAmount, durationDays, constraints, specialInstructions, tripId } = body;
 
     if (!destination) {
       return NextResponse.json({ error: "Destination is required" }, { status: 400 });
@@ -46,6 +46,8 @@ export async function POST(req: NextRequest) {
       destination,
       companions: companions || "Solo Adventurer",
       budget: budget || "Comfort",
+      budgetAmount: budgetAmount || "30000",
+      durationDays: durationDays || 3,
       constraints: constraints || [],
       specialInstructions: specialInstructions || "",
     };

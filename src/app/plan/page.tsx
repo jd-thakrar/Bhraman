@@ -77,6 +77,8 @@ export default function PlannerWorkspacePage() {
     destination: "",
     companions: "Solo 🎒",
     budget: "Comfort",
+    budgetAmount: "30000",
+    durationDays: 3,
     constraints: [] as string[],
     notes: "",
   });
@@ -186,7 +188,7 @@ export default function PlannerWorkspacePage() {
           clearInterval(interval);
           return prev;
         });
-      }, 1800);
+      }, 200);
       return () => clearInterval(interval);
     }
   }, [appStatus]);
@@ -232,6 +234,8 @@ export default function PlannerWorkspacePage() {
           destination: prefs.destination,
           companions: prefs.companions,
           budget: prefs.budget,
+          budgetAmount: prefs.budgetAmount,
+          durationDays: prefs.durationDays,
           constraints: prefs.constraints,
           specialInstructions: prefs.notes + (geoLoc ? ` (Origin: departing from ${geoLoc.city})` : ""),
         }),
@@ -402,10 +406,11 @@ export default function PlannerWorkspacePage() {
       setSaveStatus("saved");
       setTimeout(() => setSaveStatus("idle"), 2500);
       if (user) loadSavedTrips(user.id);
-    } catch (err) {
-      console.error("Save error:", err);
+    } catch (err: any) {
+      console.error("Save error details:", err);
       setSaveStatus("error");
-      setTimeout(() => setSaveStatus("idle"), 2500);
+      setTimeout(() => setSaveStatus("idle"), 4000);
+      alert(`Save Error: ${err.message || err.details || JSON.stringify(err)}`);
     }
   };
 
@@ -654,64 +659,89 @@ export default function PlannerWorkspacePage() {
                     </div>
                   )}
 
-                  {/* Step 1: Companions */}
+                  {/* Step 1: Companions & Duration */}
                   {onboardingStep === 1 && (
-                    <div className="space-y-4">
-                      <h2 className="text-2xl font-black text-white tracking-tight leading-snug">Who is traveling with you?</h2>
-                      <p className="text-white/40 text-sm font-medium">We customize the pace, stays, and events accordingly.</p>
-                      
+                    <div className="space-y-5 animate-fade-in">
                       <div className="space-y-2">
-                        {COMPANIONS.map((c) => (
+                        <div className="label-muted">Trip Duration (Days)</div>
+                        <div className="flex items-center gap-3 bg-[#161821] border border-white/[0.08] p-2.5 rounded-xl w-fit">
                           <button
-                            key={c.label}
-                            onClick={() => setPrefs({ ...prefs, companions: c.label })}
-                            className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all text-left ${
-                              prefs.companions === c.label
-                                ? "bg-indigo-500/10 border-indigo-500/30"
-                                : "bg-[#12141A] border-white/[0.07] hover:border-white/20"
-                            }`}
+                            type="button"
+                            onClick={() => setPrefs(p => ({ ...p, durationDays: Math.max(1, p.durationDays - 1) }))}
+                            className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center font-bold text-white transition-colors"
                           >
-                            <div>
-                              <div className="text-sm font-bold text-white">{c.label}</div>
-                              <div className="text-xs text-white/35 font-medium mt-0.5">{c.desc}</div>
-                            </div>
-                            {prefs.companions === c.label && (
-                              <div className="w-5 h-5 rounded-full bg-indigo-500 flex items-center justify-center shrink-0">
-                                <Check className="w-3 h-3 text-white" />
-                              </div>
-                            )}
+                            -
                           </button>
-                        ))}
+                          <span className="text-sm font-black text-white px-3 font-mono">{prefs.durationDays} Days</span>
+                          <button
+                            type="button"
+                            onClick={() => setPrefs(p => ({ ...p, durationDays: Math.min(14, p.durationDays + 1) }))}
+                            className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center font-bold text-white transition-colors"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="label-muted">Who is traveling with you?</div>
+                        <div className="grid grid-cols-2 gap-2">
+                          {COMPANIONS.map((c) => (
+                            <button
+                              key={c.label}
+                              type="button"
+                              onClick={() => setPrefs({ ...prefs, companions: c.label })}
+                              className={`p-3.5 rounded-xl border text-left transition-all ${
+                                prefs.companions === c.label
+                                  ? "bg-indigo-500/10 border-indigo-500/30"
+                                  : "bg-[#12141A] border-white/[0.07] hover:border-white/20"
+                              }`}
+                            >
+                              <div className="text-xs font-bold text-white">{c.label}</div>
+                              <div className="text-[9px] text-white/30 font-medium mt-0.5">{c.desc}</div>
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   )}
 
                   {/* Step 2: Budget & Constraints */}
                   {onboardingStep === 2 && (
-                    <div className="space-y-4">
-                      <h2 className="text-2xl font-black text-white tracking-tight leading-snug">Define your style & budget.</h2>
-                      <p className="text-white/40 text-sm font-medium">We run these through our AI scoring matrix.</p>
-                      
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <div className="label-muted">Budget Level</div>
-                          <div className="grid grid-cols-3 gap-2">
-                            {BUDGETS.map((b) => (
-                              <button
-                                key={b.label}
-                                onClick={() => setPrefs({ ...prefs, budget: b.label })}
-                                className={`p-3.5 rounded-xl border text-center transition-all ${
-                                  prefs.budget === b.label
-                                    ? "bg-indigo-500/10 border-indigo-500/35"
-                                    : "bg-[#12141A] border-white/[0.06] hover:border-white/25"
-                                }`}
-                              >
-                                <div className={`text-xs font-bold ${prefs.budget === b.label ? b.color : 'text-white'}`}>{b.label}</div>
-                                <div className="text-[9px] text-white/35 mt-0.5">₹/night</div>
-                              </button>
-                            ))}
-                          </div>
+                    <div className="space-y-5 animate-fade-in">
+                      <div className="space-y-2">
+                        <div className="label-muted">Target Trip Budget (INR)</div>
+                        <div className="relative">
+                          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30 font-bold text-sm">₹</span>
+                          <input
+                            type="number"
+                            value={prefs.budgetAmount}
+                            onChange={(e) => setPrefs({ ...prefs, budgetAmount: e.target.value })}
+                            placeholder="e.g. 30000"
+                            className="w-full bg-[#161821] border border-white/[0.08] text-white placeholder-white/20 rounded-xl pl-8 pr-4 py-3 text-sm font-semibold focus:outline-none focus:border-indigo-500/50 transition-all font-mono"
+                          />
                         </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <div className="label-muted">Style Class</div>
+                        <div className="grid grid-cols-3 gap-2">
+                          {BUDGETS.map((b) => (
+                            <button
+                              key={b.label}
+                              type="button"
+                              onClick={() => setPrefs({ ...prefs, budget: b.label })}
+                              className={`p-3 rounded-xl border text-center transition-all ${
+                                prefs.budget === b.label
+                                  ? "bg-indigo-500/10 border-indigo-500/35"
+                                  : "bg-[#12141A] border-white/[0.06] hover:border-white/25"
+                              }`}
+                            >
+                              <div className={`text-xs font-bold ${prefs.budget === b.label ? b.color : 'text-white'}`}>{b.label}</div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
 
                         <div className="space-y-2">
                           <div className="label-muted">Special Preferences</div>
@@ -735,7 +765,6 @@ export default function PlannerWorkspacePage() {
                           </div>
                         </div>
                       </div>
-                    </div>
                   )}
 
                   {/* Step 3: Special Notes */}

@@ -6,6 +6,8 @@ export async function generateTripItineraryServer(preferences: {
   destination: string; 
   companions: string; 
   budget: string; 
+  budgetAmount: string;
+  durationDays: number;
   constraints: string[]; 
   specialInstructions: string;
 }) {
@@ -13,6 +15,8 @@ export async function generateTripItineraryServer(preferences: {
 Destination / Vibe Idea: ${preferences.destination}
 Companions: ${preferences.companions}
 Budget Tier: ${preferences.budget}
+Target Total Budget Limit: ₹${preferences.budgetAmount} INR
+Trip Duration: ${preferences.durationDays} Days (You must generate exactly ${preferences.durationDays} days of itineraries)
 Constraints / Preferences: ${preferences.constraints.join(', ') || 'None'}
 Special Instructions: ${preferences.specialInstructions || 'None'}
 
