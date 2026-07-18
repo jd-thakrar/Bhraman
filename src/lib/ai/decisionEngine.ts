@@ -1,7 +1,6 @@
 import { GoogleGenAI } from '@google/genai';
 
-// Initialize SDK. It will automatically load GEMINI_API_KEY from environment variables.
-const ai = new GoogleGenAI({});
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || process.env.gemini_api });
 
 export async function generateTripItineraryServer(preferences: { 
   destination: string; 
@@ -21,6 +20,8 @@ You must respond with a raw JSON object. Do not include markdown code block form
 The JSON object must match this exact TypeScript structure:
 {
   destination: string; // The specific Indian destination city/region determined based on inputs (e.g. "Manali, Himachal Pradesh", "Udaipur, Rajasthan")
+  latitude: number; // Estimated latitude of the destination city center
+  longitude: number; // Estimated longitude of the destination city center
   description: string; // Short engaging description reflecting companions and constraints
   hotels: [
     {
@@ -31,6 +32,8 @@ The JSON object must match this exact TypeScript structure:
       walkability: number; // score 1-10
       travelTimeMinutes: number; // travel time from closest airport
       attributes: string[]; // e.g. ["Luxury", "Pool", "Quiet"]
+      latitude: number; // Estimated latitude of this hotel
+      longitude: number; // Estimated longitude of this hotel
     },
     {
       id: "h2"; // Rejected alternative 1
@@ -40,6 +43,8 @@ The JSON object must match this exact TypeScript structure:
       walkability: number;
       travelTimeMinutes: number;
       attributes: string[];
+      latitude: number;
+      longitude: number;
     },
     {
       id: "h3"; // Rejected alternative 2
@@ -49,6 +54,8 @@ The JSON object must match this exact TypeScript structure:
       walkability: number;
       travelTimeMinutes: number;
       attributes: string[];
+      latitude: number;
+      longitude: number;
     }
   ]; // Exactly 3 hotels: h1 must be the recommended winner, h2 and h3 are the alternatives/rejected options
   itinerary: [
@@ -98,43 +105,39 @@ The JSON object must match this exact TypeScript structure:
   }
 }
 
-export async function recalculateConfidenceServer(selectedOptionId: string, rejectedOptionId: string, userConstraint: string) {
-  const prompt = `You are a travel recommender algorithm. We previously recommended hotel ${selectedOptionId} and rejected hotel ${rejectedOptionId}.
-The user has challenged this decision with the following override constraint: "${userConstraint}"
+export async function recalculateConfidenceServer(
+  selectedHotelId: string,
+  rejectedHotelId: string,
+  userConstraint: string
+) {
+  const prompt = `You are a travel planning decision assistant.
+We have selected hotel ID "${selectedHotelId}" but the traveler is challenging this choice and wants alternative hotel ID "${rejectedHotelId}".
+ Traveler's preference/reason: "${userConstraint}"
 
-Recalculate the match score and confidence level of the rejected hotel (${rejectedOptionId}) if we apply this constraint override.
-Return a raw JSON object with this exact structure:
+Analyze if the alternative hotel makes more sense now. Recalculate the confidence scores.
+Return a raw JSON object matching this structure:
 {
-  recalculated_confidence: number; // new confidence score out of 100
-  score_breakdown: {
-    budget_fit: number; // score out of 30
-    travel_time: number; // score out of 30
-    review_quality: number; // score out of 20
-    walkability: number; // score out of 20
-  };
-  delta_summary: string; // A short explanation (1-2 sentences) of how this constraint change impacts the decision
-  still_recommend_selected: boolean; // whether the primary recommendation stays the winner
+  "recalculated_confidence": number, // 0-100 score for the alternative stay
+  "score_breakdown": {
+    "budget_fit": number, // out of 30
+    "travel_time": number, // out of 30
+    "review_quality": number, // out of 20
+    "walkability": number // out of 20
+  },
+  "delta_summary": "string", // Explanation of why the recommendation changed or stayed the same
+  "still_recommend_selected": boolean // True if original selection remains better overall
 }
-
-Just return the raw JSON object. Do not wrap in markdown formatting.`;
+`;
 
   try {
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-      }
+      config: { responseMimeType: 'application/json' },
     });
-
-    const text = response.text;
-    if (!text) {
-      throw new Error("Empty response from Gemini API");
-    }
-
-    return JSON.parse(text);
+    return JSON.parse(response.text || "{}");
   } catch (error) {
-    console.error("Error recalculating confidence via Gemini API:", error);
+    console.error("Error recalculating confidence:", error);
     throw error;
   }
 }

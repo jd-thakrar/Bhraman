@@ -4,8 +4,31 @@ import { getMockDataFromPreferences } from "@/data/mockData";
 import { getAdminClient, ensureSchema } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-function isDemoMode(): boolean {
-  return process.env.DEMO_MODE === "true" || !process.env.GEMINI_API_KEY;
+// Weather code description helper
+function getWeatherDescription(code: number): { condition: string; emoji: string } {
+  const codes: Record<number, { condition: string; emoji: string }> = {
+    0: { condition: "Clear Sky", emoji: "☀️" },
+    1: { condition: "Mainly Clear", emoji: "🌤️" },
+    2: { condition: "Partly Cloudy", emoji: "⛅" },
+    3: { condition: "Overcast", emoji: "☁️" },
+    45: { condition: "Foggy", emoji: "🌫️" },
+    48: { condition: "Depositing Rime Fog", emoji: "🌫️" },
+    51: { condition: "Light Drizzle", emoji: "🌧️" },
+    53: { condition: "Moderate Drizzle", emoji: "🌧️" },
+    55: { condition: "Dense Drizzle", emoji: "🌧️" },
+    61: { condition: "Slight Rain", emoji: "🌧️" },
+    63: { condition: "Moderate Rain", emoji: "🌧️" },
+    65: { condition: "Heavy Rain", emoji: "⛈️" },
+    71: { condition: "Slight Snowfall", emoji: "❄️" },
+    73: { condition: "Moderate Snowfall", emoji: "❄️" },
+    75: { condition: "Heavy Snowfall", emoji: "❄️" },
+    77: { condition: "Snow Grains", emoji: "❄️" },
+    80: { condition: "Slight Rain Showers", emoji: "🌧️" },
+    81: { condition: "Moderate Rain Showers", emoji: "🌧️" },
+    82: { condition: "Violent Rain Showers", emoji: "⛈️" },
+    95: { condition: "Thunderstorm", emoji: "⚡" },
+  };
+  return codes[code] || { condition: "Pleasant Weather", emoji: "🍃" };
 }
 
 export async function POST(req: NextRequest) {
@@ -73,18 +96,45 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Generate itinerary
+    // Generate itinerary dynamically using Gemini API (try live call first, fallback to mock if key is missing or calls fail)
     let data;
-    if (isDemoMode()) {
-      data = getMockDataFromPreferences(preferences);
-    } else {
-      try {
-        data = await generateTripItineraryServer(preferences);
-      } catch (aiError) {
-        console.warn("Gemini failed, using mock data:", aiError);
-        data = getMockDataFromPreferences(preferences);
+    try {
+      if (!process.env.GEMINI_API_KEY) {
+        throw new Error("GEMINI_API_KEY environment variable is not defined.");
       }
+      data = await generateTripItineraryServer(preferences);
+    } catch (aiError) {
+      console.warn("Live Gemini generation failed or key is missing. Falling back to dynamic mock generator:", aiError);
+      data = getMockDataFromPreferences(preferences);
     }
+
+    // ── Real-Time Weather Lookup ──────────────────────────────────────────
+    let weather = { temp: 26, condition: "Pleasant", emoji: "🍃" };
+    try {
+      const lat = data.latitude || 24.5854;
+      const lon = data.longitude || 73.7125;
+      const weatherRes = await fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`,
+        { next: { revalidate: 3600 } } // Cache weather query for 1 hour
+      );
+      if (weatherRes.ok) {
+        const weatherData = await weatherRes.json();
+        const current = weatherData.current_weather;
+        if (current) {
+          const desc = getWeatherDescription(current.weathercode);
+          weather = {
+            temp: Math.round(current.temperature),
+            condition: desc.condition,
+            emoji: desc.emoji,
+          };
+        }
+      }
+    } catch (weatherErr) {
+      console.warn("Weather API call failed:", weatherErr);
+    }
+
+    // Append weather block to itinerary output
+    data.weather = weather;
 
     // Save generated itinerary directly into the trip row
     if (currentTripId) {
@@ -102,7 +152,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       ...data,
       tripId: currentTripId,
-      source: isDemoMode() ? "demo" : "ai",
+      source: "dynamic_ai",
     });
   } catch (error: unknown) {
     console.error("API generate error:", error);

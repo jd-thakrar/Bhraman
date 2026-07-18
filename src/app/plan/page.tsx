@@ -498,11 +498,52 @@ export default function PlannerWorkspacePage() {
               Departing from: {geoLoc.city}
             </span>
           )}
+          {itinerary?.weather && (
+            <span className="hidden md:inline-flex items-center gap-1.5 text-xs text-white/40 font-bold bg-white/5 border border-white/10 px-3 py-1 rounded-full animate-fade-in">
+              <span>{itinerary.weather.emoji}</span>
+              <span>{itinerary.destination?.split(',')[0]}: {itinerary.weather.temp}°C {itinerary.weather.condition}</span>
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-3">
           {user ? (
             <>
-              <span className="text-xs font-bold text-white/35 bg-white/5 border border-white/[0.08] px-3 py-1 rounded-full">
+              {itinerary && (
+                <button
+                  onClick={handleSaveTrip}
+                  disabled={saveStatus === "saving"}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold border transition-all hover:scale-[1.02] active:scale-[0.98] ${
+                    saveStatus === "saved"
+                      ? "bg-green-500/10 border-green-500/35 text-green-400 font-black"
+                      : saveStatus === "error"
+                      ? "bg-red-500/10 border-red-500/35 text-red-400 font-black"
+                      : "bg-indigo-500 hover:bg-indigo-400 border-indigo-500 text-white shadow-lg shadow-indigo-500/20 active:scale-95 disabled:opacity-50"
+                  }`}
+                >
+                  {saveStatus === "saving" ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Saving...
+                    </>
+                  ) : saveStatus === "saved" ? (
+                    <>
+                      <Check className="w-3.5 h-3.5" />
+                      Saved!
+                    </>
+                  ) : saveStatus === "error" ? (
+                    <>
+                      <ShieldAlert className="w-3.5 h-3.5" />
+                      Error
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-3.5 h-3.5" />
+                      Save Trip
+                    </>
+                  )}
+                </button>
+              )}
+              <span className="text-xs font-bold text-white/35 bg-white/5 border border-white/[0.08] px-3 py-1 rounded-full animate-fade-in">
                 {user.email}
               </span>
               <button onClick={handleSignOut} className="text-xs font-bold text-white/30 hover:text-white transition-colors flex items-center gap-1">
@@ -914,43 +955,8 @@ export default function PlannerWorkspacePage() {
                     })}
                   </div>
 
-                  {/* Save action & Budget preview status */}
+                  {/* Budget preview status only */}
                   <div className="flex items-center gap-4">
-                    {user && (
-                      <button
-                        onClick={handleSaveTrip}
-                        disabled={saveStatus === "saving"}
-                        className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all hover:scale-[1.02] active:scale-[0.98] ${
-                          saveStatus === "saved"
-                            ? "bg-green-500/10 border-green-500/35 text-green-400 font-black"
-                            : saveStatus === "error"
-                            ? "bg-red-500/10 border-red-500/35 text-red-400 font-black"
-                            : "bg-indigo-500 hover:bg-indigo-400 border-indigo-500 text-white shadow-lg shadow-indigo-500/20 active:scale-95 disabled:opacity-50"
-                        }`}
-                      >
-                        {saveStatus === "saving" ? (
-                          <>
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                            Saving...
-                          </>
-                        ) : saveStatus === "saved" ? (
-                          <>
-                            <Check className="w-3.5 h-3.5 animate-pulse" />
-                            Saved to Cloud!
-                          </>
-                        ) : saveStatus === "error" ? (
-                          <>
-                            <ShieldAlert className="w-3.5 h-3.5" />
-                            Failed to Save
-                          </>
-                        ) : (
-                          <>
-                            <Save className="w-3.5 h-3.5" />
-                            Save Changes
-                          </>
-                        )}
-                      </button>
-                    )}
                     <div className="text-right">
                       <div className="text-[9px] font-black text-white/30 uppercase tracking-wider">Est. Budget</div>
                       <div className="text-lg font-black text-white">₹{itinerary?.budget?.total?.toLocaleString()}</div>

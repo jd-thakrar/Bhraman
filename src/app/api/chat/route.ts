@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 import { getAdminClient } from "@/lib/supabase/admin";
 
-const ai = new GoogleGenAI({});
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || process.env.gemini_api });
 
 export async function POST(req: NextRequest) {
   try {
