@@ -20,6 +20,7 @@ interface Trip {
   preferences: any;
   selected_hotel: string;
   status: string;
+  itinerary: any;
 }
 
 const DESTINATIONS = [
@@ -277,30 +278,21 @@ export default function PlannerWorkspacePage() {
     setTripId(trip.id);
     setPrefs(trip.preferences);
 
-    try {
-      const { data: cached, error } = await supabase
-        .from("reasoning_cache")
-        .select("result")
-        .eq("trip_id", trip.id)
-        .eq("stage_name", "full_itinerary")
-        .single();
-
-      if (!error && cached?.result) {
-        setItinerary(cached.result);
-        setChatMessages([
-          {
-            role: "ai",
-            text: `Welcome back! Loaded your saved trip to ${trip.destination}. Let's make dynamic adjustments or edit the budget list directly.`,
-          },
-        ]);
-        setAppStatus("generated");
-      } else {
-        handleGenerateTrip();
-      }
-    } catch (err) {
-      console.error(err);
-      handleGenerateTrip();
+    // Load itinerary directly from the trip row
+    if (trip.itinerary) {
+      setItinerary(trip.itinerary);
+      setChatMessages([
+        {
+          role: "ai",
+          text: `Welcome back! Loaded your saved trip to ${trip.destination}. All your previous changes are here. Tell me if you need any adjustments!`,
+        },
+      ]);
+      setAppStatus("generated");
+      return;
     }
+
+    // No cached itinerary — regenerate
+    handleGenerateTrip();
   };
 
   const handleSendChatMessage = async (e?: React.FormEvent, customText?: string) => {
@@ -319,6 +311,7 @@ export default function PlannerWorkspacePage() {
         body: JSON.stringify({
           message: text,
           itinerary,
+          tripId,
           chatHistory: chatMessages.slice(-4).map((m) => ({ role: m.role, content: m.text })),
         }),
       });

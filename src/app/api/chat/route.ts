@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenAI, Type, Schema } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
+import { getAdminClient } from "@/lib/supabase/admin";
 
 const ai = new GoogleGenAI({});
 
 export async function POST(req: NextRequest) {
   try {
-    const { message, itinerary, chatHistory } = await req.json();
+    const { message, itinerary, chatHistory, tripId } = await req.json();
 
     const context = itinerary ? `
 Current trip context:
@@ -18,41 +19,50 @@ Current Itinerary:
 ${itinerary.itinerary?.map((d: any) => `Day ${d.day} - ${d.title}: ${d.activities?.map((a: any) => `${a.time} ${a.description}`).join(', ')}`).join('\n')}
 ` : "";
 
-    const historyText = chatHistory?.slice(-6).map((m: any) => `${m.role === 'user' ? 'Traveler' : 'AI'}: ${m.content}`).join('\n') || '';
-
     const prompt = `You are Bhraman AI, a smart travel co-pilot for Indian trips. 
 You help travelers handle live changes (e.g. flight delays, tiredness, rain, food preferences, adding activities).
 
-Analyze the traveler's request: "${message}"
+The traveler says: "${message}"
 
-Your response must contain two parts in JSON format:
-1. "reply": A natural, concise response (2-3 sentences) explaining how you are updating the plan.
-2. "updatedItinerary": (Optional) If the traveler's request changes the schedule, budget, or packing list, return the COMPLETE, fully-updated itinerary object with the same structure as the current itinerary. If no changes are needed, return null.
+${context}
 
-Current Itinerary Object to modify:
+Your response must be a JSON object with:
+1. "reply": A natural, helpful response (2-3 sentences) explaining the change.
+2. "updatedItinerary": If the request requires modifying the schedule/budget/packing, return the COMPLETE updated itinerary object matching the same structure. If no changes needed, return null.
+
+Current itinerary data:
 ${JSON.stringify(itinerary, null, 2)}
 
-Strictly output your response as a valid JSON object matching this schema:
-{
-  "reply": "string",
-  "updatedItinerary": object or null
-}`;
+Output valid JSON only:
+{"reply": "string", "updatedItinerary": object_or_null}`;
 
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-      }
+      config: { responseMimeType: "application/json" },
     });
 
     const parsed = JSON.parse(response.text || "{}");
+
+    // If the AI returned an updated itinerary AND we have a tripId, persist it
+    if (parsed.updatedItinerary && tripId) {
+      try {
+        const db = getAdminClient();
+        await db
+          .from("trips")
+          .update({ itinerary: parsed.updatedItinerary })
+          .eq("id", tripId);
+      } catch (dbErr) {
+        console.warn("Failed to persist chat update:", dbErr);
+      }
+    }
+
     return NextResponse.json(parsed);
   } catch (err: any) {
     console.error("Chat error:", err);
     return NextResponse.json({
-      reply: "I've processed your update. Let's adjust your itinerary accordingly!",
-      updatedItinerary: null
+      reply: "I've noted your request! Let me adjust the plan accordingly.",
+      updatedItinerary: null,
     });
   }
 }
