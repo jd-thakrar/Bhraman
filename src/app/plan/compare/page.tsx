@@ -2,272 +2,215 @@
 
 import { useState, useEffect } from "react";
 import { GOA_MOCK_DATA } from "@/data/mockData";
+import { TripChatWidget } from "@/components/trip-chat-widget";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Check, X, ArrowRight, Loader2, Info, Plane, Star } from "lucide-react";
-import { CountingNumber } from "@/components/ui/counting-number";
+import { Check, X, ArrowRight, Loader2, Info, Plane, Star, ChevronDown, ChevronUp } from "lucide-react";
 
 export default function ComparePage() {
   const router = useRouter();
   const [itineraryData, setItineraryData] = useState<any>(null);
 
   useEffect(() => {
-    const stored = localStorage.getItem('currentItinerary');
-    if (stored) {
-      try {
-        setItineraryData(JSON.parse(stored));
-      } catch (e) {
-        setItineraryData(GOA_MOCK_DATA);
-      }
-    } else {
-      setItineraryData(GOA_MOCK_DATA);
-    }
+    const stored = localStorage.getItem("currentItinerary");
+    try { setItineraryData(stored ? JSON.parse(stored) : GOA_MOCK_DATA); }
+    catch { setItineraryData(GOA_MOCK_DATA); }
   }, []);
 
-  const [challengeStates, setChallengeStates] = useState<Record<string, {
-    status: 'idle' | 're-evaluating' | 'completed',
-    newConfidence?: number,
-    deltaSummary?: string,
-    breakdown?: Record<string, number>
-  }>>({}); 
+  const [challengeStates, setChallengeStates] = useState<Record<string, any>>({});
 
   if (!itineraryData) {
     return (
-      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center">
-        <Loader2 className="w-8 h-8 text-indigo-600 animate-spin mb-4" />
-        <span className="text-slate-500 font-bold">Loading recommendations...</span>
+      <div className="min-h-screen bg-[#0A0B0F] flex items-center justify-center">
+        <Loader2 className="w-6 h-6 text-indigo-400 animate-spin" />
       </div>
     );
   }
 
-  const selectedHotel = itineraryData.hotels[0];
-  const rejectedHotels = [itineraryData.hotels[1], itineraryData.hotels[2]];
+  const winner = itineraryData.hotels[0];
+  const rejected = [itineraryData.hotels[1], itineraryData.hotels[2]].filter(Boolean);
 
   const handleChallenge = async (hotelId: string, override?: string) => {
-    setChallengeStates(prev => ({
-      ...prev,
-      [hotelId]: { status: 're-evaluating' }
-    }));
-
+    setChallengeStates((p) => ({ ...p, [hotelId]: { status: "loading" } }));
     try {
       const res = await fetch("/api/recalculate", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          selectedHotelId: selectedHotel.id,
+          selectedHotelId: winner.id,
           rejectedHotelId: hotelId,
           userConstraint: override || "",
-          tripId: typeof window !== "undefined" ? localStorage.getItem("currentTripId") : null,
-        })
+          tripId: localStorage.getItem("currentTripId"),
+        }),
       });
-
-      if (!res.ok) {
-        throw new Error("Recalculate failed");
-      }
-
-      const result = await res.json();
-
-      setChallengeStates(prev => ({
-        ...prev,
-        [hotelId]: {
-          status: 'completed',
-          newConfidence: result.recalculated_confidence,
-          deltaSummary: result.delta_summary,
-          breakdown: result.score_breakdown
-        }
+      const data = await res.json();
+      setChallengeStates((p) => ({
+        ...p,
+        [hotelId]: { status: "done", confidence: data.recalculated_confidence, summary: data.delta_summary },
       }));
-    } catch (e) {
-      console.error(e);
-      // fallback
-      setChallengeStates(prev => ({
-        ...prev,
-        [hotelId]: {
-          status: 'completed',
-          newConfidence: 78,
-          deltaSummary: "Calculated response override parameters: The stay score adjusted favorably to the challenge but distance remains a limiting factor.",
-          breakdown: { budget_fit: 24, travel_time: 18, review_quality: 18, walkability: 18 }
-        }
+    } catch {
+      setChallengeStates((p) => ({
+        ...p,
+        [hotelId]: { status: "done", confidence: 72, summary: "Score improved with this override, but distance remains a factor." },
       }));
     }
   };
 
+  const scoreColor = (n: number) =>
+    n >= 80 ? "text-green-400" : n >= 55 ? "text-amber-400" : "text-red-400";
+
   return (
-    <div className="min-h-screen bg-slate-50 selection:bg-indigo-100">
+    <div className="min-h-screen bg-[#0A0B0F]">
       {/* Nav */}
-      <div className="sticky top-0 z-50 flex items-center justify-between px-6 py-4 bg-white/80 backdrop-blur-md border-b border-gray-100">
-        <Link href="/" className="flex items-center gap-2 text-slate-900 font-bold text-lg tracking-tight">
-          <Plane className="w-5 h-5 text-indigo-600 -rotate-45" />
-          TripMind
+      <header className="sticky top-0 z-40 border-b border-white/[0.06] bg-[#0A0B0F]/80 backdrop-blur-xl px-6 h-14 flex items-center justify-between">
+        <Link href="/" className="flex items-center gap-2 font-bold text-base">
+          <div className="w-7 h-7 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center">
+            <Plane className="w-4 h-4 text-indigo-400 -rotate-45" />
+          </div>
+          <span className="text-white">Bhraman</span>
         </Link>
-        <button 
+        <button
           onClick={() => router.push("/itinerary")}
-          className="bg-indigo-600 text-white rounded-full px-5 py-2.5 text-sm font-semibold hover:bg-indigo-700 flex items-center gap-1.5 transition-all shadow-sm shadow-indigo-100 hover:scale-[1.02] active:scale-[0.98]"
+          className="flex items-center gap-2 bg-indigo-500 hover:bg-indigo-400 text-white text-sm font-bold px-4 py-2 rounded-full transition-all"
         >
-          View Full Itinerary <ArrowRight className="w-4 h-4" />
+          View Itinerary <ArrowRight className="w-3.5 h-3.5" />
         </button>
-      </div>
+      </header>
 
-      <div className="max-w-4xl mx-auto p-6 sm:p-12 pb-32">
+      <div className="max-w-3xl mx-auto px-6 py-10 pb-32">
         {/* Header */}
-        <header className="mb-12 text-center sm:text-left">
-          <div className="inline-flex items-center rounded-full bg-emerald-50 border border-emerald-100 px-4 py-1.5 text-xs font-semibold text-emerald-700 mb-4">
-            <Check className="w-3 h-3 mr-1.5" /> Analysis Complete
+        <div className="mb-8">
+          <div className="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-bold px-3 py-1 rounded-full mb-4">
+            <Check className="w-3 h-3" /> Analysis Complete
           </div>
-          <h1 className="text-4xl font-extrabold text-slate-900 tracking-tight mb-3">
-            Your AI Recommendation
-          </h1>
-          <p className="text-slate-500 text-lg max-w-2xl font-medium leading-relaxed">
-            We analyzed {itineraryData.destination} and evaluated options against your constraints. Here is why {selectedHotel.name} won.
+          <h1 className="text-3xl font-black text-white mb-2">AI Recommendation</h1>
+          <p className="text-white/40 text-sm font-medium">
+            {itineraryData.destination} · {rejected.length + 1} options evaluated
           </p>
-        </header>
+        </div>
 
-        {/* Winner Card */}
-        <section className="mb-12">
-          <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Top AI Pick</div>
-          <div className="bg-white rounded-3xl shadow-sm border border-slate-100 border-l-4 border-l-emerald-500 p-6 sm:p-10 relative overflow-hidden">
-            <div className="flex flex-col sm:flex-row justify-between items-start gap-6">
-              <div className="flex-1">
-                <h3 className="text-3xl font-bold text-slate-900 mb-2">{selectedHotel.name}</h3>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {selectedHotel.attributes.map((attr: string) => (
-                    <span key={attr} className="bg-slate-100 text-slate-600 text-xs font-semibold px-3 py-1 rounded-full">{attr}</span>
-                  ))}
-                </div>
-                <div className="flex items-center gap-1 text-amber-500 mb-6">
-                  {[...Array(5)].map((_, i) => <Star key={i} className="w-4 h-4 fill-current" />)}
-                  <span className="text-slate-500 text-sm font-semibold ml-2">{selectedHotel.rating} / 5.0</span>
-                </div>
+        {/* Winner */}
+        <div className="bg-[#12141A] border border-white/[0.07] border-l-[3px] border-l-green-500 rounded-2xl p-6 mb-4">
+          <div className="flex items-start justify-between gap-4 mb-6">
+            <div className="flex-1">
+              <div className="label-muted mb-2">Top AI Pick</div>
+              <h2 className="text-2xl font-black text-white mb-2">{winner.name}</h2>
+              <div className="flex flex-wrap gap-2 mb-3">
+                {winner.attributes?.map((a: string) => (
+                  <span key={a} className="badge-blue text-[11px] font-bold px-2.5 py-1 rounded-full">{a}</span>
+                ))}
               </div>
-              <div className="text-right flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto">
-                <div className="text-emerald-600 font-extrabold text-6xl tracking-tight leading-none">
-                  <CountingNumber value={87} suffix="%" />
-                </div>
-                <div className="text-slate-400 text-xs uppercase tracking-widest font-bold mt-1.5">Confidence Score</div>
+              <div className="flex items-center gap-1 text-amber-400">
+                {[...Array(5)].map((_, i) => <Star key={i} className="w-3.5 h-3.5 fill-current" />)}
+                <span className="text-white/40 text-xs font-semibold ml-2">{winner.rating} / 5.0</span>
               </div>
             </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
-              {[
-                { label: "Budget Fit", score: "25/30" },
-                { label: "Proximity", score: "28/30" },
-                { label: "Reviews", score: "18/20" },
-                { label: "Walkability", score: "16/20" }
-              ].map(item => (
-                <div key={item.label} className="bg-slate-50 p-4 rounded-2xl border border-slate-100/50">
-                  <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">{item.label}</div>
-                  <div className="text-xl text-slate-800 font-bold">{item.score}</div>
-                </div>
-              ))}
-            </div>
-
-            <div className="space-y-3 pt-6 border-t border-slate-100">
-              <div className="flex items-start text-slate-600 text-sm font-medium">
-                <Check className="w-5 h-5 text-emerald-500 mr-3 shrink-0 mt-0.5" />
-                <span>Saves you {selectedHotel.travelTimeMinutes} minutes of transfer time.</span>
-              </div>
-              <div className="flex items-start text-slate-600 text-sm font-medium">
-                <Check className="w-5 h-5 text-emerald-500 mr-3 shrink-0 mt-0.5" />
-                <span>Highest overall reviews matching your vibes.</span>
-              </div>
+            <div className="text-right shrink-0">
+              <div className="text-6xl font-black text-green-400 leading-none">87</div>
+              <div className="label-muted mt-1">Confidence</div>
             </div>
           </div>
-        </section>
 
-        {/* Rejected Options */}
-        <section>
-          <div className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Alternatives Considered & Rejection Log</div>
-          <div className="grid gap-4">
-            {rejectedHotels.map(hotel => {
-              const currentScore = challengeStates[hotel.id]?.newConfidence || 65;
-              let scoreColor = "text-rose-500";
-              if (currentScore >= 80) scoreColor = "text-emerald-600";
-              else if (currentScore >= 50) scoreColor = "text-amber-500";
-
-              return (
-                <div key={hotel.id} className="bg-white rounded-3xl shadow-sm border border-slate-100 p-6 sm:p-8">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-xl font-bold text-slate-400 line-through decoration-slate-300 decoration-2 mb-2">{hotel.name}</h3>
-                      <div className="flex flex-wrap gap-1.5">
-                        {hotel.attributes.map((attr: string) => (
-                          <span key={attr} className="bg-slate-50 text-slate-400 text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full">{attr}</span>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <span className={`${scoreColor} font-extrabold text-4xl tracking-tight transition-colors duration-500`}>
-                        <CountingNumber value={currentScore} suffix="%" />
-                      </span>
-                      <div className="text-slate-400 text-[9px] uppercase tracking-widest font-bold mt-0.5">Confidence</div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start text-slate-500 text-sm font-medium mb-6">
-                    <X className="w-4 h-4 text-rose-400 mr-2.5 shrink-0 mt-0.5" />
-                    <span>Rejected: Travel time is {hotel.travelTimeMinutes} mins from airport, with less match for Quiet Vibe.</span>
-                  </div>
-
-                  <AnimatePresence mode="wait">
-                    {!challengeStates[hotel.id] ? (
-                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0, height: 0 }}>
-                        <button 
-                          onClick={() => handleChallenge(hotel.id)}
-                          className="flex items-center border border-slate-200 text-slate-600 px-5 py-2.5 rounded-full text-xs font-bold hover:bg-slate-50 transition-colors active:scale-95 cursor-pointer"
-                        >
-                          <Info className="w-4 h-4 mr-2 text-slate-400" /> Why not this stay?
-                        </button>
-                      </motion.div>
-                    ) : (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        className="bg-slate-50 rounded-2xl p-5 border border-slate-100 overflow-hidden"
-                      >
-                        {challengeStates[hotel.id].status === 're-evaluating' ? (
-                          <div className="flex items-center text-indigo-600 text-xs font-bold">
-                            <Loader2 className="w-4 h-4 mr-2.5 animate-spin" />
-                            <span>Re-scoring against customized parameters...</span>
-                          </div>
-                        ) : (
-                          <div>
-                            <div className="text-sm text-slate-600 font-semibold mb-4 leading-relaxed">
-                              {challengeStates[hotel.id].deltaSummary}
-                            </div>
-                            <div className="flex flex-wrap gap-2 pt-4 border-t border-slate-200/60">
-                              <span className="text-[10px] font-bold text-slate-400 w-full mb-1 uppercase tracking-widest">Adjust constraints</span>
-                              <button 
-                                onClick={() => handleChallenge(hotel.id, "Budget didn't matter")}
-                                className="text-xs bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-full font-bold hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-600 transition-colors cursor-pointer"
-                              >
-                                Budget didn't matter
-                              </button>
-                              <button 
-                                onClick={() => handleChallenge(hotel.id, "I wanted vibrant nightlife instead")}
-                                className="text-xs bg-white border border-slate-200 text-slate-600 px-4 py-2 rounded-full font-bold hover:bg-indigo-50 hover:border-indigo-200 hover:text-indigo-600 transition-colors cursor-pointer"
-                              >
-                                I wanted vibrant nightlife
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              );
-            })}
+          {/* Score grid */}
+          <div className="grid grid-cols-4 gap-2">
+            {[["Budget", "25/30"], ["Proximity", "28/30"], ["Reviews", "18/20"], ["Walkability", "16/20"]].map(([k, v]) => (
+              <div key={k} className="bg-[#1A1C24] rounded-xl p-3 text-center">
+                <div className="label-muted mb-1">{k}</div>
+                <div className="text-sm font-bold text-white/80">{v}</div>
+              </div>
+            ))}
           </div>
-        </section>
+
+          <div className="mt-4 space-y-2">
+            <div className="flex items-start gap-2 text-sm text-white/50">
+              <Check className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
+              <span>Saves {winner.travelTimeMinutes} min transfer time vs alternatives.</span>
+            </div>
+            <div className="flex items-start gap-2 text-sm text-white/50">
+              <Check className="w-4 h-4 text-green-400 shrink-0 mt-0.5" />
+              <span>Top review sentiment for your selected travel vibe.</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Rejected */}
+        <div className="label-muted mb-3">Alternatives & Rejection Log</div>
+        <div className="space-y-3">
+          {rejected.map((hotel) => {
+            const state = challengeStates[hotel.id];
+            const score = state?.confidence ?? 65;
+            return (
+              <div key={hotel.id} className="bg-[#12141A] border border-white/[0.06] border-l-[3px] border-l-red-500/50 rounded-2xl p-5">
+                <div className="flex items-start justify-between gap-4 mb-3">
+                  <div>
+                    <h3 className="text-lg font-bold text-white/30 line-through decoration-white/20 mb-1">{hotel.name}</h3>
+                    <div className="flex flex-wrap gap-1.5">
+                      {hotel.attributes?.map((a: string) => (
+                        <span key={a} className="text-[10px] font-bold text-white/20 bg-white/5 px-2 py-0.5 rounded-full uppercase tracking-wide">{a}</span>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className={`text-4xl font-black leading-none ${scoreColor(score)}`}>{score}</div>
+                    <div className="label-muted mt-1">Score</div>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-2 text-sm text-white/30 mb-4">
+                  <X className="w-4 h-4 text-red-400/60 shrink-0 mt-0.5" />
+                  <span>Rejected: {hotel.travelTimeMinutes}min airport transfer + lower vibe match.</span>
+                </div>
+
+                <AnimatePresence mode="wait">
+                  {!state ? (
+                    <button
+                      onClick={() => handleChallenge(hotel.id)}
+                      className="flex items-center gap-2 text-xs font-bold text-white/40 hover:text-indigo-400 border border-white/[0.08] hover:border-indigo-500/30 px-4 py-2 rounded-full transition-all"
+                    >
+                      <Info className="w-3.5 h-3.5" /> Why not this stay?
+                    </button>
+                  ) : (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      className="bg-[#1A1C24] border border-white/[0.06] rounded-xl p-4"
+                    >
+                      {state.status === "loading" ? (
+                        <div className="flex items-center gap-2 text-xs text-indigo-400 font-bold">
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" /> Re-evaluating with Gemini...
+                        </div>
+                      ) : (
+                        <>
+                          <p className="text-sm text-white/60 font-medium mb-3 leading-relaxed">{state.summary}</p>
+                          <div className="flex flex-wrap gap-2">
+                            <span className="label-muted w-full mb-1">Override constraints:</span>
+                            {["Budget doesn't matter", "I prefer nightlife", "Skip beach, want city"].map((opt) => (
+                              <button
+                                key={opt}
+                                onClick={() => handleChallenge(hotel.id, opt)}
+                                className="text-[11px] font-bold text-white/40 hover:text-indigo-300 bg-white/5 hover:bg-indigo-500/10 border border-white/[0.06] hover:border-indigo-500/20 px-3 py-1.5 rounded-full transition-all"
+                              >
+                                {opt}
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Floating bottom CTA */}
-      <div className="fixed bottom-6 left-0 right-0 flex justify-center z-50 pointer-events-none">
-        <button 
+      {/* Fixed bottom CTA */}
+      <div className="fixed bottom-6 left-0 right-0 flex justify-center z-30 pointer-events-none">
+        <button
           onClick={() => router.push("/itinerary")}
-          className="pointer-events-auto bg-indigo-600 text-white hover:bg-indigo-700 rounded-full px-8 py-3.5 font-bold shadow-lg shadow-indigo-100 flex items-center gap-2 hover:scale-105 active:scale-95 transition-all"
+          className="pointer-events-auto flex items-center gap-2 bg-indigo-500 hover:bg-indigo-400 text-white font-bold px-8 py-3.5 rounded-full shadow-xl shadow-indigo-500/30 transition-all hover:scale-105 active:scale-95"
         >
           View Full Itinerary <ArrowRight className="w-4 h-4" />
         </button>

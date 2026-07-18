@@ -2,209 +2,165 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Plane, MapPin, Brain, Sparkles, ArrowRight, Check, Star } from "lucide-react";
+import { Plane, ArrowRight, Sparkles, Check, MapPin, Zap, Shield } from "lucide-react";
 
 export default function Home() {
   return (
-    <main className="relative min-h-screen bg-white overflow-hidden selection:bg-indigo-100">
+    <main className="min-h-screen bg-[#0A0B0F] text-[#F0F2F8] overflow-hidden">
+
+      {/* Ambient background glow */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-20%] left-[20%] w-[600px] h-[600px] bg-indigo-600/10 rounded-full blur-[120px]" />
+        <div className="absolute bottom-[-10%] right-[10%] w-[500px] h-[500px] bg-violet-600/8 rounded-full blur-[120px]" />
+      </div>
+
       {/* Navbar */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 text-slate-900 font-bold text-xl tracking-tight">
-            <Plane className="w-6 h-6 text-indigo-600 -rotate-45" />
-            TripMind
+      <header className="relative z-50 border-b border-white/[0.06] bg-[#0A0B0F]/80 backdrop-blur-xl sticky top-0">
+        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2 font-bold text-lg tracking-tight">
+            <div className="w-7 h-7 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center">
+              <Plane className="w-4 h-4 text-indigo-400 -rotate-45" />
+            </div>
+            <span className="text-white">Bhraman</span>
           </Link>
           <nav className="hidden md:flex items-center gap-8">
-            <Link href="/how-it-works" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">
-              How it works
-            </Link>
-            <Link href="/pricing" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">
-              Pricing
-            </Link>
+            <Link href="/how-it-works" className="text-sm font-medium text-white/50 hover:text-white transition-colors">How it works</Link>
+            <Link href="/pricing" className="text-sm font-medium text-white/50 hover:text-white transition-colors">Pricing</Link>
+            <Link href="/admin" className="text-sm font-medium text-white/50 hover:text-white transition-colors">Admin</Link>
           </nav>
           <div className="flex items-center gap-3">
-            <Link href="/login" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">
-              Sign In
-            </Link>
-            <Link href="/plan" className="inline-flex items-center justify-center bg-indigo-600 text-white rounded-full px-5 py-2.5 text-sm font-semibold hover:bg-indigo-700 transition-all shadow-sm shadow-indigo-100 hover:scale-[1.02] active:scale-[0.98]">
-              Start Planning <ArrowRight className="w-4 h-4 ml-1.5" />
+            <Link href="/login" className="text-sm font-semibold text-white/60 hover:text-white transition-colors">Sign In</Link>
+            <Link href="/plan" className="inline-flex items-center gap-2 bg-indigo-500 hover:bg-indigo-400 text-white text-sm font-bold px-4 py-2 rounded-full transition-all hover:scale-[1.03] active:scale-[0.97] shadow-lg shadow-indigo-500/20">
+              Plan Trip <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="relative pt-12 pb-24 px-6 max-w-6xl mx-auto flex flex-col items-center">
-        <div className="text-center max-w-3xl z-10">
-          <motion.div 
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="inline-flex items-center rounded-full bg-indigo-50 border border-indigo-100 px-4 py-1.5 text-xs font-semibold text-indigo-700 mb-8"
-          >
-            <Sparkles className="w-3.5 h-3.5 mr-1.5 text-indigo-600 fill-indigo-200" />
-            Powered by Gemini 2.5 Pro AI
-          </motion.div>
-
-          <motion.h1 
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-5xl sm:text-7xl font-extrabold tracking-tight text-slate-900 leading-[1.05]"
-          >
-            Plan your perfect <br />
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-violet-600">
-              Indian Getaway
-            </span>
-          </motion.h1>
-
-          <motion.p 
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-xl sm:text-2xl text-slate-500 font-medium mt-6 leading-relaxed max-w-2xl mx-auto"
-          >
-            Stop drowning in fifty open tabs. TripMind analyzes thousands of options — hotels, routes, and budgets — to find the mathematically perfect trip.
-          </motion.p>
-
-          <motion.div 
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
-            className="mt-10 flex flex-col sm:flex-row gap-4 justify-center items-center"
-          >
-            <Link href="/plan" className="w-full sm:w-auto inline-flex items-center justify-center bg-indigo-600 text-white rounded-full px-8 py-4 text-lg font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 hover:scale-105 active:scale-95">
-              Start Planning
+      {/* Hero */}
+      <section className="relative max-w-6xl mx-auto px-6 pt-20 pb-12 text-center">
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+          <div className="inline-flex items-center gap-2 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-xs font-bold px-4 py-1.5 rounded-full mb-8">
+            <Sparkles className="w-3.5 h-3.5" /> Powered by Gemini 2.5 Pro
+          </div>
+          <h1 className="text-5xl sm:text-7xl font-black tracking-tight text-white leading-[1.02] mb-6">
+            Your AI travel<br />
+            <span className="gradient-text">co-pilot for India</span>
+          </h1>
+          <p className="text-lg text-white/40 font-medium max-w-xl mx-auto leading-relaxed mb-10">
+            Tell it your destination, budget, and vibe. Watch it build a mathematically perfect trip — and update it live when plans change.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link href="/plan" className="inline-flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-400 text-white font-bold px-8 py-4 rounded-full transition-all hover:scale-105 active:scale-95 shadow-xl shadow-indigo-500/25">
+              Start Planning Free
             </Link>
-            <Link href="/how-it-works" className="w-full sm:w-auto inline-flex items-center justify-center bg-slate-50 text-slate-700 rounded-full px-8 py-4 text-lg font-bold hover:bg-slate-100 border border-slate-200 transition-all active:scale-95">
+            <Link href="/how-it-works" className="inline-flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold px-8 py-4 rounded-full transition-all">
               See How It Works
             </Link>
-          </motion.div>
-        </div>
-
-        {/* 3D Interactive App Mockup - Styled beautifully like Flighty */}
-        <motion.div 
-          initial={{ y: 50, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 1, delay: 0.4, ease: "easeOut" }}
-          className="relative w-full max-w-3xl mt-16 aspect-video bg-white rounded-3xl border border-slate-100 shadow-[0_20px_50px_rgba(0,0,0,0.08)] overflow-hidden flex flex-col"
-        >
-          {/* Mockup Header */}
-          <div className="h-12 border-b border-slate-100 flex items-center px-6 bg-slate-50/50">
-            <div className="flex gap-1.5">
-              <div className="w-3 h-3 rounded-full bg-slate-200" />
-              <div className="w-3 h-3 rounded-full bg-slate-200" />
-              <div className="w-3 h-3 rounded-full bg-slate-200" />
-            </div>
-            <div className="mx-auto text-[10px] font-bold uppercase tracking-widest text-slate-400">Live Trip Analysis</div>
           </div>
-          
-          {/* Mockup Content */}
-          <div className="flex-1 p-6 sm:p-8 grid grid-cols-3 gap-4 bg-white relative">
-            <div className="col-span-2 space-y-4">
-              <div className="bg-slate-50/70 rounded-2xl p-5 border border-slate-100/50 relative overflow-hidden">
-                <div className="text-2xl font-bold text-slate-900 mb-1">Goa Beach Escapade</div>
-                <div className="text-emerald-600 font-semibold text-sm flex items-center">
-                  <Check className="w-4 h-4 mr-1" /> 87% Confidence Match
-                </div>
-                <Plane className="absolute right-4 top-1/2 -translate-y-1/2 w-24 h-24 text-slate-100/20 -rotate-45" />
-              </div>
+        </motion.div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-slate-50/70 rounded-2xl p-4 border border-slate-100/50">
-                  <div className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">Budget Fit</div>
-                  <div className="text-lg font-bold text-slate-800">₹95,000 Total</div>
+        {/* Live Trip Card — Flighty style */}
+        <motion.div
+          initial={{ y: 60, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.3, ease: "easeOut" }}
+          className="relative mt-20 max-w-2xl mx-auto"
+        >
+          {/* Card glow */}
+          <div className="absolute inset-0 bg-indigo-500/5 rounded-3xl blur-xl" />
+
+          <div className="relative bg-[#12141A] border border-white/[0.07] rounded-3xl overflow-hidden">
+            {/* Card header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-white/[0.06]">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+                <span className="text-xs font-bold text-white/40 uppercase tracking-widest">Live AI Analysis</span>
+              </div>
+              <span className="text-xs font-bold text-indigo-400 bg-indigo-500/10 px-3 py-1 rounded-full">87% Match</span>
+            </div>
+
+            {/* Main content */}
+            <div className="p-6 grid grid-cols-3 gap-4">
+              {/* Left — Destination */}
+              <div className="col-span-2">
+                <div className="label-muted mb-2">Recommended</div>
+                <div className="text-3xl font-black text-white mb-1">GOA</div>
+                <div className="text-sm text-white/40 font-medium mb-4">Taj Exotica Resort & Spa · Beachfront</div>
+                <div className="flex gap-2">
+                  <span className="badge-green text-[11px] font-bold px-3 py-1 rounded-full">✓ Best Value</span>
+                  <span className="badge-blue text-[11px] font-bold px-3 py-1 rounded-full">45 min airport</span>
                 </div>
-                <div className="bg-slate-50/70 rounded-2xl p-4 border border-slate-100/50">
-                  <div className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-1">Hotel Winner</div>
-                  <div className="text-lg font-bold text-slate-800 flex items-center gap-1">
-                    Taj Exotica <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
-                  </div>
+              </div>
+              {/* Right — Score */}
+              <div className="flex flex-col items-end justify-between">
+                <div className="text-right">
+                  <div className="label-muted mb-1">Confidence</div>
+                  <div className="text-5xl font-black text-green-400 leading-none">87</div>
+                  <div className="text-white/30 text-xs font-bold">/ 100</div>
+                </div>
+                <div className="text-right">
+                  <div className="label-muted mb-1">Budget</div>
+                  <div className="text-xl font-bold text-white">₹95,000</div>
                 </div>
               </div>
             </div>
 
-            <div className="col-span-1">
-              <div className="h-full bg-slate-50/70 rounded-2xl p-5 border border-slate-100/50 flex flex-col justify-between">
-                <div>
-                  <div className="text-[10px] uppercase tracking-widest text-slate-400 font-bold mb-3">AI Engine Reasoning</div>
-                  <div className="space-y-2">
-                    <div className="h-2 w-3/4 bg-slate-200 rounded-full" />
-                    <div className="h-2 w-full bg-slate-200 rounded-full" />
-                    <div className="h-2 w-5/6 bg-slate-200 rounded-full" />
-                  </div>
+            {/* Stats strip */}
+            <div className="grid grid-cols-4 border-t border-white/[0.06]">
+              {[["Budget Fit", "25/30"], ["Proximity", "28/30"], ["Reviews", "18/20"], ["Walkability", "16/20"]].map(([k, v]) => (
+                <div key={k} className="p-4 text-center border-r border-white/[0.05] last:border-r-0">
+                  <div className="label-muted mb-1">{k}</div>
+                  <div className="text-sm font-bold text-white/80">{v}</div>
                 </div>
-                <div className="text-[11px] font-semibold text-indigo-600">Checked 120+ factors</div>
-              </div>
+              ))}
             </div>
           </div>
         </motion.div>
       </section>
 
-      {/* Steps Section */}
-      <section className="bg-slate-50/80 border-y border-slate-100 py-24 px-6">
-        <div className="max-w-6xl mx-auto text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold text-slate-900">How TripMind Works</h2>
-          <p className="text-slate-500 mt-2 font-medium">Three steps to your mathematically guaranteed vacation</p>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-16">
-            <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 text-center">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 mb-6 font-bold text-xl">1</div>
-              <h3 className="text-lg font-bold text-slate-900 mb-2">Tell Us Your Vibe</h3>
-              <p className="text-slate-500 text-sm leading-relaxed">Answer 3 simple questions about dates, budget, and travel style. Quick, conversational, and simple.</p>
+      {/* Feature highlights */}
+      <section className="max-w-6xl mx-auto px-6 py-20">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {[
+            { icon: Zap, title: "Live AI Chat", desc: "Tell it 'flight delayed 2 hours' and it instantly rebuilds your itinerary around your new reality.", color: "text-amber-400", bg: "bg-amber-400/10 border-amber-400/20" },
+            { icon: Shield, title: "Contestable AI", desc: "Don't like a recommendation? Challenge it. The AI explains every decision with full score breakdowns.", color: "text-indigo-400", bg: "bg-indigo-500/10 border-indigo-500/20" },
+            { icon: MapPin, title: "120+ Indian Destinations", desc: "From Leh to Kanyakumari. Every recommendation scored against 8 weighted factors in real time.", color: "text-green-400", bg: "bg-green-400/10 border-green-400/20" },
+          ].map(({ icon: Icon, title, desc, color, bg }) => (
+            <div key={title} className="bg-[#12141A] border border-white/[0.06] rounded-2xl p-6">
+              <div className={`w-10 h-10 rounded-xl border ${bg} flex items-center justify-center mb-4`}>
+                <Icon className={`w-5 h-5 ${color}`} />
+              </div>
+              <h3 className="text-base font-bold text-white mb-2">{title}</h3>
+              <p className="text-sm text-white/40 leading-relaxed">{desc}</p>
             </div>
-            <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 text-center">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 mb-6 font-bold text-xl">2</div>
-              <h3 className="text-lg font-bold text-slate-900 mb-2">AI Crunches the Numbers</h3>
-              <p className="text-slate-500 text-sm leading-relaxed">Our Gemini-powered 8-stage pipeline parses destinations, hotels, proximity, and reviews.</p>
-            </div>
-            <div className="bg-white rounded-2xl p-8 shadow-sm border border-slate-100 text-center">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 mb-6 font-bold text-xl">3</div>
-              <h3 className="text-lg font-bold text-slate-900 mb-2">Review & Challenge</h3>
-              <p className="text-slate-500 text-sm leading-relaxed">Get a custom itinerary. Don't agree? Challenge the AI directly to update details dynamically.</p>
-            </div>
-          </div>
+          ))}
         </div>
       </section>
 
-      {/* Stats Bar */}
-      <section className="py-16 bg-white border-b border-slate-100">
-        <div className="max-w-6xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-          <div>
-            <div className="text-4xl font-extrabold text-indigo-600">120+</div>
-            <div className="text-sm font-semibold text-slate-400 mt-1 uppercase tracking-wider">Destinations</div>
-          </div>
-          <div>
-            <div className="text-4xl font-extrabold text-indigo-600">500+</div>
-            <div className="text-sm font-semibold text-slate-400 mt-1 uppercase tracking-wider">Hotels Scored</div>
-          </div>
-          <div>
-            <div className="text-4xl font-extrabold text-indigo-600">₹ INR</div>
-            <div className="text-sm font-semibold text-slate-400 mt-1 uppercase tracking-wider">Indian Standards</div>
-          </div>
-          <div>
-            <div className="text-4xl font-extrabold text-indigo-600">Gemini</div>
-            <div className="text-sm font-semibold text-slate-400 mt-1 uppercase tracking-wider">Real AI Engine</div>
-          </div>
+      {/* Stats */}
+      <section className="max-w-6xl mx-auto px-6 py-8 border-y border-white/[0.05]">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+          {[["120+", "Destinations"], ["500+", "Hotels Scored"], ["₹ INR", "Indian Pricing"], ["Gemini", "AI Engine"]].map(([num, label]) => (
+            <div key={label}>
+              <div className="text-2xl font-black text-indigo-400 mb-1">{num}</div>
+              <div className="label-muted">{label}</div>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* CTA Box */}
-      <section className="py-24 px-6 max-w-6xl mx-auto">
-        <div className="bg-gradient-to-r from-indigo-600 to-violet-600 rounded-3xl p-12 text-center text-white relative overflow-hidden shadow-xl shadow-indigo-100">
-          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-tight">Ready to build your dream itinerary?</h2>
-          <p className="text-indigo-100 text-lg mt-4 max-w-xl mx-auto font-medium">Join thousands of Indian travelers making travel decisions backed by algorithms, not ads.</p>
-          <div className="mt-8">
-            <Link href="/plan" className="inline-flex items-center justify-center bg-white text-indigo-600 font-bold px-8 py-4 rounded-full hover:bg-slate-50 transition-all shadow-md active:scale-95">
-              Plan My Trip Now
-            </Link>
-          </div>
-        </div>
+      {/* CTA */}
+      <section className="max-w-4xl mx-auto px-6 py-24 text-center">
+        <h2 className="text-4xl font-black text-white mb-4">Ready to plan smarter?</h2>
+        <p className="text-white/40 mb-8 font-medium">Built for real travelers. Backed by real AI.</p>
+        <Link href="/plan" className="inline-flex items-center gap-2 bg-indigo-500 hover:bg-indigo-400 text-white font-bold px-10 py-4 rounded-full transition-all hover:scale-105 shadow-xl shadow-indigo-500/25">
+          Start Free <ArrowRight className="w-4 h-4" />
+        </Link>
       </section>
 
-      {/* Footer */}
-      <footer className="py-12 border-t border-slate-100 bg-slate-50/50 text-center text-sm font-medium text-slate-400">
-        Built for Prompt Wars 2026 🏆 | TripMind Inc.
+      <footer className="border-t border-white/[0.05] py-8 text-center text-xs text-white/20 font-medium">
+        Bhraman · Built for Prompt Wars 2026 🏆
       </footer>
     </main>
   );
