@@ -2,19 +2,19 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Plane, ArrowRight, Brain, Cpu, Database, Check, ShieldCheck, Zap } from "lucide-react";
+import { Plane, ArrowRight, Cpu, Check, ShieldCheck, Zap } from "lucide-react";
 
 export default function HowItWorks() {
   const steps = [
     {
       num: 1,
       title: "Goal Extraction & Preferences",
-      desc: "TripMind parses travel dates, vibe constraints, and budget caps to map a structured intent matrix."
+      desc: "Bhraman parses travel dates, companions, budget caps, and personal constraints to map a structured intent matrix."
     },
     {
       num: 2,
       title: "Hard Constraint Filtering",
-      desc: "Flags impossible combinations (e.g., traveling to Leh/Ladakh without acclimation time or over-budget options)."
+      desc: "Flags impossible combinations (e.g., traveling to high-altitude areas without acclimation time or over-budget options)."
     },
     {
       num: 3,
@@ -29,7 +29,7 @@ export default function HowItWorks() {
     {
       num: 5,
       title: "Itinerary Route Optimization",
-      desc: "Leverages algorithms to minimize transit bottlenecks between daily activities so you spend less time in traffic."
+      desc: "Leverages distance maps to minimize transit bottlenecks between daily activities so you spend less time in traffic."
     },
     {
       num: 6,
@@ -49,46 +49,51 @@ export default function HowItWorks() {
   ];
 
   return (
-    <main className="min-h-screen bg-white text-slate-900 selection:bg-indigo-100">
+    <main className="min-h-screen bg-[#0A0B0F] text-[#F0F2F8] overflow-hidden">
+      {/* Ambient background glow */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute top-[-20%] left-[20%] w-[600px] h-[600px] bg-indigo-600/5 rounded-full blur-[140px]" />
+      </div>
+
       {/* Navbar */}
-      <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2 text-slate-900 font-bold text-xl tracking-tight">
-            <Plane className="w-6 h-6 text-indigo-600 -rotate-45" />
-            TripMind
+      <header className="relative z-50 border-b border-white/[0.06] bg-[#0A0B0F]/80 backdrop-blur-xl sticky top-0">
+        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2 font-bold text-lg tracking-tight">
+            <div className="w-7 h-7 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center">
+              <Plane className="w-4 h-4 text-indigo-400 -rotate-45" />
+            </div>
+            <span className="text-white">Bhraman</span>
           </Link>
           <nav className="hidden md:flex items-center gap-8">
-            <Link href="/how-it-works" className="text-sm font-semibold text-slate-900 transition-colors">
-              How it works
-            </Link>
-            <Link href="/pricing" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors">
-              Pricing
-            </Link>
+            <Link href="/how-it-works" className="text-sm font-medium text-white transition-colors">How it works</Link>
+            <Link href="/pricing" className="text-sm font-medium text-white/50 hover:text-white transition-colors">Pricing</Link>
+            <Link href="/admin" className="text-sm font-medium text-white/50 hover:text-white transition-colors">Admin</Link>
           </nav>
-          <div>
-            <Link href="/plan" className="inline-flex items-center justify-center bg-indigo-600 text-white rounded-full px-5 py-2.5 text-sm font-semibold hover:bg-indigo-700 transition-all hover:scale-[1.02]">
-              Plan My Trip <ArrowRight className="w-4 h-4 ml-1.5" />
+          <div className="flex items-center gap-3">
+            <Link href="/login" className="text-sm font-semibold text-white/60 hover:text-white transition-colors">Sign In</Link>
+            <Link href="/plan" className="inline-flex items-center gap-2 bg-indigo-500 hover:bg-indigo-400 text-white text-sm font-bold px-4 py-2 rounded-full transition-all hover:scale-[1.03] active:scale-[0.97] shadow-lg shadow-indigo-500/20">
+              Plan Trip <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
         </div>
       </header>
 
       {/* Hero */}
-      <section className="py-20 px-6 max-w-4xl mx-auto text-center">
-        <div className="inline-flex items-center rounded-full bg-indigo-50 border border-indigo-100 px-4 py-1.5 text-xs font-semibold text-indigo-700 mb-6">
+      <section className="relative z-10 py-20 px-6 max-w-4xl mx-auto text-center">
+        <div className="inline-flex items-center rounded-full bg-indigo-500/10 border border-indigo-500/20 px-4 py-1.5 text-xs font-semibold text-indigo-400 mb-6">
           <Cpu className="w-3.5 h-3.5 mr-1.5" /> Core Algorithm Engine
         </div>
-        <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight text-slate-900 leading-[1.1]">
+        <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-white leading-[1.1]">
           The 8-Stage Reasoning Pipeline
         </h1>
-        <p className="text-lg sm:text-xl text-slate-500 font-medium mt-6 max-w-2xl mx-auto leading-relaxed">
-          TripMind doesn't just hit a database. Our pipeline runs a strict, multi-stage scoring process powered by Gemini AI to guarantee decision accuracy.
+        <p className="text-lg sm:text-xl text-white/40 font-medium mt-6 max-w-2xl mx-auto leading-relaxed">
+          Bhraman doesn't just hit a database. Our pipeline runs a strict, multi-stage scoring process powered by Gemini AI to guarantee decision accuracy.
         </p>
       </section>
 
       {/* Timeline Steps */}
-      <section className="py-12 px-6 max-w-2xl mx-auto">
-        <div className="relative border-l-2 border-indigo-100 ml-4 space-y-12 pb-12">
+      <section className="relative z-10 py-12 px-6 max-w-2xl mx-auto">
+        <div className="relative border-l-2 border-white/[0.08] ml-4 space-y-12 pb-12">
           {steps.map((step) => (
             <motion.div 
               key={step.num}
@@ -99,13 +104,13 @@ export default function HowItWorks() {
               className="relative pl-10"
             >
               {/* Number Dot */}
-              <div className="absolute -left-[17px] top-1 w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-bold text-sm shadow-sm border-4 border-white">
+              <div className="absolute -left-[17px] top-1 w-8 h-8 rounded-full bg-indigo-500 text-white flex items-center justify-center font-bold text-sm shadow-md border-4 border-[#0A0B0F]">
                 {step.num}
               </div>
 
               <div>
-                <h3 className="text-xl font-bold text-slate-900 mb-2">{step.title}</h3>
-                <p className="text-slate-500 font-medium text-[15px] leading-relaxed">{step.desc}</p>
+                <h3 className="text-xl font-bold text-white mb-2">{step.title}</h3>
+                <p className="text-white/40 font-medium text-[15px] leading-relaxed">{step.desc}</p>
               </div>
             </motion.div>
           ))}
@@ -113,41 +118,41 @@ export default function HowItWorks() {
       </section>
 
       {/* Contestable AI Section */}
-      <section className="bg-slate-50 py-24 px-6 border-y border-slate-100">
+      <section className="relative z-10 bg-[#12141A] py-24 px-6 border-y border-white/[0.06]">
         <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center rounded-full bg-indigo-50 border border-indigo-100 px-4 py-1.5 text-xs font-semibold text-indigo-700 mb-6">
+          <div className="inline-flex items-center rounded-full bg-indigo-500/10 border border-indigo-500/20 px-4 py-1.5 text-xs font-semibold text-indigo-400 mb-6">
             <ShieldCheck className="w-3.5 h-3.5 mr-1.5" /> Full Transparency
           </div>
-          <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900">Don't agree? Challenge the AI.</h2>
-          <p className="text-lg text-slate-500 font-medium mt-4 max-w-2xl mx-auto leading-relaxed">
-            Most engines force an itinerary down your throat. TripMind exposes the AI's rejections. Simply click "Why not this stay?" to trace the mathematical trade-offs live, adjust variables, and recalculate score outputs.
+          <h2 className="text-3xl sm:text-4xl font-extrabold text-white">Don't agree? Challenge the AI.</h2>
+          <p className="text-lg text-white/40 font-medium mt-4 max-w-2xl mx-auto leading-relaxed">
+            Most engines force an itinerary down your throat. Bhraman exposes the AI's rejections. Simply click "Why not this stay?" to trace the mathematical trade-offs live, adjust variables, and recalculate score outputs.
           </p>
 
-          <div className="mt-12 bg-white rounded-2xl p-6 border border-slate-100 shadow-sm max-w-md mx-auto text-left">
+          <div className="mt-12 bg-[#1A1C24] rounded-2xl p-6 border border-white/[0.08] shadow-2xl max-w-md mx-auto text-left">
             <div className="flex justify-between items-start mb-4">
               <div>
-                <span className="text-slate-400 font-bold line-through decoration-slate-300">W Goa — Vagator</span>
-                <p className="text-slate-400 text-xs font-medium mt-1">Party • Modern • Vibrant</p>
+                <span className="text-white/40 font-bold line-through decoration-white/20">W Goa — Vagator</span>
+                <p className="text-white/30 text-xs font-medium mt-1">Party • Modern • Vibrant</p>
               </div>
               <span className="text-amber-500 font-bold text-lg">65% Match</span>
             </div>
-            <button className="w-full inline-flex items-center justify-center border border-indigo-200 text-indigo-600 hover:bg-indigo-50 font-bold px-4 py-2 rounded-full text-xs transition-colors">
-              <Zap className="w-3 h-3 mr-1.5" /> Simulating Re-evaluation
+            <button className="w-full inline-flex items-center justify-center border border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/10 font-bold px-4 py-2 rounded-full text-xs transition-colors">
+              <Zap className="w-3.5 h-3.5 mr-1.5" /> Simulating Re-evaluation
             </button>
           </div>
         </div>
       </section>
 
       {/* CTA */}
-      <section className="py-24 px-6 text-center">
-        <h2 className="text-3xl font-extrabold text-slate-900 mb-6">Experience intelligent planning yourself</h2>
-        <Link href="/plan" className="inline-flex items-center justify-center bg-indigo-600 text-white rounded-full px-8 py-4 text-lg font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100 active:scale-95">
+      <section className="relative z-10 py-24 px-6 text-center">
+        <h2 className="text-3xl font-extrabold text-white mb-6">Experience intelligent planning yourself</h2>
+        <Link href="/plan" className="inline-flex items-center justify-center bg-indigo-500 hover:bg-indigo-400 text-white rounded-full px-8 py-4 text-lg font-bold transition-all shadow-xl shadow-indigo-500/25 active:scale-95">
           Start Your AI Build
         </Link>
       </section>
 
-      <footer className="py-12 border-t border-slate-100 bg-slate-50 text-center text-sm font-medium text-slate-400">
-        Built for Prompt Wars 2026 🏆 | TripMind Inc.
+      <footer className="relative z-10 py-12 border-t border-white/[0.06] bg-[#0A0B0F] text-center text-sm font-medium text-white/20">
+        Built for Prompt Wars 2026 🏆 | Bhraman Inc.
       </footer>
     </main>
   );
