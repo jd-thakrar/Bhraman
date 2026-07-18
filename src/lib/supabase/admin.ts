@@ -121,26 +121,19 @@ ALTER TABLE public.trips ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.reasoning_cache ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.challenge_responses ENABLE ROW LEVEL SECURITY;
 
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'open_profiles_select') THEN
-    CREATE POLICY open_profiles_select ON public.profiles FOR SELECT USING (true);
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'open_profiles_insert') THEN
-    CREATE POLICY open_profiles_insert ON public.profiles FOR INSERT WITH CHECK (true);
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'open_profiles_update') THEN
-    CREATE POLICY open_profiles_update ON public.profiles FOR UPDATE USING (true);
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'open_trips_all') THEN
-    CREATE POLICY open_trips_all ON public.trips USING (true) WITH CHECK (true);
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'open_cache_all') THEN
-    CREATE POLICY open_cache_all ON public.reasoning_cache USING (true) WITH CHECK (true);
-  END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'open_challenges_all') THEN
-    CREATE POLICY open_challenges_all ON public.challenge_responses USING (true) WITH CHECK (true);
-  END IF;
-END $$;
+DROP POLICY IF EXISTS open_profiles_select ON public.profiles;
+DROP POLICY IF EXISTS open_profiles_insert ON public.profiles;
+DROP POLICY IF EXISTS open_profiles_update ON public.profiles;
+DROP POLICY IF EXISTS open_trips_all ON public.trips;
+DROP POLICY IF EXISTS open_cache_all ON public.reasoning_cache;
+DROP POLICY IF EXISTS open_challenges_all ON public.challenge_responses;
+
+CREATE POLICY open_profiles_select ON public.profiles FOR SELECT USING (true);
+CREATE POLICY open_profiles_insert ON public.profiles FOR INSERT WITH CHECK (true);
+CREATE POLICY open_profiles_update ON public.profiles FOR UPDATE USING (true);
+CREATE POLICY open_trips_all ON public.trips FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY open_cache_all ON public.reasoning_cache FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY open_challenges_all ON public.challenge_responses FOR ALL USING (true) WITH CHECK (true);
 
 NOTIFY pgrst, 'reload schema';
 

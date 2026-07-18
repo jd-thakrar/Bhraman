@@ -669,10 +669,11 @@ export default function PlannerWorkspacePage() {
                   {onboardingStep === 0 && (
                     <div className="space-y-4">
                       <h2 className="text-2xl font-black text-white tracking-tight leading-snug">Where would you like to escape?</h2>
-                      <p className="text-white/40 text-sm font-medium">Type any destination in India or choose a popular card.</p>
+                      <label htmlFor="destination-input" className="text-white/40 text-sm font-medium block">Type any destination in India or choose a popular card.</label>
                       
                       <div className="space-y-4">
                         <input
+                          id="destination-input"
                           type="text"
                           value={prefs.destination}
                           onChange={(e) => setPrefs({ ...prefs, destination: e.target.value })}
@@ -708,6 +709,7 @@ export default function PlannerWorkspacePage() {
                           <button
                             type="button"
                             onClick={() => setPrefs(p => ({ ...p, durationDays: Math.max(1, p.durationDays - 1) }))}
+                            aria-label="Decrease duration"
                             className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center font-bold text-white transition-colors"
                           >
                             -
@@ -716,6 +718,7 @@ export default function PlannerWorkspacePage() {
                           <button
                             type="button"
                             onClick={() => setPrefs(p => ({ ...p, durationDays: Math.min(14, p.durationDays + 1) }))}
+                            aria-label="Increase duration"
                             className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center font-bold text-white transition-colors"
                           >
                             +
@@ -750,10 +753,11 @@ export default function PlannerWorkspacePage() {
                   {onboardingStep === 2 && (
                     <div className="space-y-5 animate-fade-in">
                       <div className="space-y-2">
-                        <div className="label-muted">Target Trip Budget (INR)</div>
+                        <label htmlFor="budget-amount-input" className="label-muted block">Target Trip Budget (INR)</label>
                         <div className="relative">
                           <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/30 font-bold text-sm">₹</span>
                           <input
+                            id="budget-amount-input"
                             type="number"
                             value={prefs.budgetAmount}
                             onChange={(e) => setPrefs({ ...prefs, budgetAmount: e.target.value })}
@@ -811,9 +815,10 @@ export default function PlannerWorkspacePage() {
                   {onboardingStep === 3 && (
                     <div className="space-y-4">
                       <h2 className="text-2xl font-black text-white tracking-tight leading-snug">Any specific instructions?</h2>
-                      <p className="text-white/40 text-sm font-medium">Add details like vegan needs, specific locations, or pace preferences.</p>
+                      <label htmlFor="special-notes-textarea" className="text-white/40 text-sm font-medium block">Add details like vegan needs, specific locations, or pace preferences.</label>
                       
                       <textarea
+                        id="special-notes-textarea"
                         rows={5}
                         value={prefs.notes}
                         onChange={(e) => setPrefs({ ...prefs, notes: e.target.value })}
@@ -944,6 +949,8 @@ export default function PlannerWorkspacePage() {
                   {/* Chat Input panel */}
                   <form onSubmit={handleSendChatMessage} className="flex gap-2 items-center bg-[#1A1C24] border border-white/[0.08] rounded-xl px-3.5 py-2">
                     <input
+                      id="chat-copilot-input"
+                      aria-label="Ask the co-pilot to change plans"
                       value={chatInput}
                       onChange={(e) => setChatInput(e.target.value)}
                       placeholder="Ask the co-pilot to change plans..."
@@ -952,9 +959,10 @@ export default function PlannerWorkspacePage() {
                     <button
                       type="submit"
                       disabled={!chatInput.trim() || chatLoading}
+                      aria-label="Send message"
                       className="w-8 h-8 rounded-lg bg-indigo-500 hover:bg-indigo-400 disabled:opacity-40 flex items-center justify-center transition-all"
                     >
-                      <Send className="w-4 h-4 text-white" />
+                      <Send aria-hidden="true" className="w-4 h-4 text-white" />
                     </button>
                   </form>
                 </motion.div>
@@ -1120,6 +1128,7 @@ export default function PlannerWorkspacePage() {
                             <input
                               type="text"
                               placeholder="New Expense (e.g. Taxi)"
+                              aria-label="New expense label"
                               value={newCustomLabel}
                               onChange={(e) => setNewCustomLabel(e.target.value)}
                               className="flex-2 bg-white/5 border border-white/10 text-xs text-white placeholder-white/25 rounded-lg px-2.5 py-1.5 focus:outline-none"
@@ -1127,6 +1136,7 @@ export default function PlannerWorkspacePage() {
                             <input
                               type="number"
                               placeholder="Amount (₹)"
+                              aria-label="New expense amount"
                               value={newCustomValue}
                               onChange={(e) => setNewCustomValue(e.target.value)}
                               className="flex-1 bg-white/5 border border-white/10 text-xs text-white placeholder-white/25 rounded-lg px-2.5 py-1.5 focus:outline-none"

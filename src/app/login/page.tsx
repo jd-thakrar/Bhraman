@@ -89,6 +89,7 @@ export default function LoginPage() {
     setMessage(null);
 
     try {
+      const isHardcodedAdmin = email.toLowerCase().trim() === "chiragthakrardk@gmail.com";
       if (isSignUp) {
         // Sign up user
         const { data: authData, error: authErr } = await supabase.auth.signUp({
@@ -100,12 +101,13 @@ export default function LoginPage() {
         if (authData?.user) {
           // Create role-based profile — catch errors so missing tables don't block registration
           try {
+            const resolvedRole = isHardcodedAdmin ? "admin" : role;
             await supabase
               .from("profiles")
               .upsert({
                 id: authData.user.id,
                 email,
-                role: role,
+                role: resolvedRole,
               });
           } catch (profileErr) {
             console.error("Profile creation error, ignoring:", profileErr);
@@ -125,26 +127,42 @@ export default function LoginPage() {
         if (authData?.user) {
           let userRole = "customer";
           
-          // Query role from profiles — catch any missing table error gracefully
-          try {
-            const { data: profile } = await supabase
-              .from("profiles")
-              .select("role")
-              .eq("id", authData.user.id)
-              .single();
-
-            if (profile) {
-              userRole = profile.role;
-            } else {
-              // Try creating a default profile if missing
-              await supabase.from("profiles").upsert({
-                id: authData.user.id,
-                email,
-                role: "customer"
-              });
+          if (isHardcodedAdmin) {
+            userRole = "admin";
+            // Ensure the profile exists and is updated in DB
+            try {
+              await supabase
+                .from("profiles")
+                .upsert({
+                  id: authData.user.id,
+                  email: authData.user.email,
+                  role: "admin",
+                });
+            } catch (err) {
+              console.error("Failed to upsert admin profile:", err);
             }
-          } catch (profileErr) {
-            console.error("Profile fetch error, falling back to customer:", profileErr);
+          } else {
+            // Query role from profiles — catch any missing table error gracefully
+            try {
+              const { data: profile } = await supabase
+                .from("profiles")
+                .select("role")
+                .eq("id", authData.user.id)
+                .single();
+
+              if (profile) {
+                userRole = profile.role;
+              } else {
+                // Try creating a default profile if missing
+                await supabase.from("profiles").upsert({
+                  id: authData.user.id,
+                  email,
+                  role: "customer"
+                });
+              }
+            } catch (profileErr) {
+              console.error("Profile fetch error, falling back to customer:", profileErr);
+            }
           }
 
           if (userRole === "admin") {
@@ -173,7 +191,7 @@ export default function LoginPage() {
       <header className="relative z-10 border-b border-white/[0.06] px-6 h-14 flex items-center justify-between bg-[#0A0B0F]/80 backdrop-blur-md">
         <Link href="/" className="flex items-center gap-2 font-bold text-base tracking-tight">
           <div className="w-7 h-7 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center">
-            <Plane className="w-4 h-4 text-indigo-400 -rotate-45" />
+            <Plane aria-hidden="true" className="w-4 h-4 text-indigo-400 -rotate-45" />
           </div>
           <span className="text-white">Bhraman</span>
         </Link>
@@ -203,13 +221,13 @@ export default function LoginPage() {
             <form onSubmit={handleSubmit} className="space-y-5">
               {error && (
                 <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-xs font-semibold rounded-xl p-3.5 flex items-start gap-2">
-                  <ShieldAlert className="w-4 h-4 shrink-0 mt-0.5" />
+                  <ShieldAlert aria-hidden="true" className="w-4 h-4 shrink-0 mt-0.5" />
                   <span>{error}</span>
                 </div>
               )}
               {message && (
                 <div className="bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-semibold rounded-xl p-3.5 flex items-start gap-2">
-                  <UserCheck className="w-4 h-4 shrink-0 mt-0.5" />
+                  <UserCheck aria-hidden="true" className="w-4 h-4 shrink-0 mt-0.5" />
                   <span>{message}</span>
                 </div>
               )}
@@ -217,8 +235,8 @@ export default function LoginPage() {
               {/* Role Picker for Sign Up */}
               {isSignUp && (
                 <div className="space-y-2">
-                  <label className="label-muted block">Select Role</label>
-                  <div className="grid grid-cols-2 gap-2 bg-[#1A1C24] p-1 rounded-xl border border-white/[0.06]">
+                  <label htmlFor="role-select" className="label-muted block">Select Role</label>
+                  <div id="role-select" className="grid grid-cols-2 gap-2 bg-[#1A1C24] p-1 rounded-xl border border-white/[0.06]">
                     <button
                       type="button"
                       onClick={() => setRole("customer")}
@@ -247,10 +265,11 @@ export default function LoginPage() {
 
               {/* Email */}
               <div className="space-y-1">
-                <label className="label-muted block mb-1.5">Email Address</label>
+                <label htmlFor="email-input" className="label-muted block mb-1.5">Email Address</label>
                 <div className="relative">
-                  <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
+                  <Mail aria-hidden="true" className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
                   <input
+                    id="email-input"
                     type="email"
                     required
                     value={email}
@@ -263,10 +282,11 @@ export default function LoginPage() {
 
               {/* Password */}
               <div className="space-y-1">
-                <label className="label-muted block mb-1.5">Password</label>
+                <label htmlFor="password-input" className="label-muted block mb-1.5">Password</label>
                 <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
+                  <Lock aria-hidden="true" className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
                   <input
+                    id="password-input"
                     type={showPassword ? "text" : "password"}
                     required
                     value={password}
@@ -277,9 +297,10 @@ export default function LoginPage() {
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
                     className="absolute right-3.5 top-1/2 -translate-y-1/2 text-white/20 hover:text-white/60 transition-colors"
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    {showPassword ? <EyeOff aria-hidden="true" className="w-4 h-4" /> : <Eye aria-hidden="true" className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
@@ -290,8 +311,8 @@ export default function LoginPage() {
                 disabled={loading}
                 className="w-full flex items-center justify-center gap-2 bg-indigo-500 hover:bg-indigo-400 disabled:opacity-50 text-white font-bold py-3.5 rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] mt-2 shadow-lg shadow-indigo-500/20"
               >
-                {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : (
-                  <>{isSignUp ? "Register Account" : "Access Console"} <ArrowRight className="w-4 h-4" /></>
+                {loading ? <Loader2 aria-hidden="true" className="w-5 h-5 animate-spin" /> : (
+                  <>{isSignUp ? "Register Account" : "Access Console"} <ArrowRight aria-hidden="true" className="w-4 h-4" /></>
                 )}
               </button>
             </form>

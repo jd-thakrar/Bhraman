@@ -55,6 +55,11 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
+  // Force admin role for the hardcoded admin email
+  if (user && user.email?.toLowerCase().trim() === "chiragthakrardk@gmail.com") {
+    userRole = "admin";
+  }
+
   const path = request.nextUrl.pathname;
 
   // ── Route Protection ──────────────────────────────────────────────────────
@@ -82,6 +87,9 @@ export async function updateSession(request: NextRequest) {
   // 3. Login Protection: Redirect logged-in users away from /login
   if (path === "/login") {
     if (user) {
+      if (user.email?.toLowerCase().trim() === "chiragthakrardk@gmail.com") {
+        return NextResponse.redirect(new URL("/admin", request.url));
+      }
       try {
         const { data: profile } = await supabase
           .from("profiles")
