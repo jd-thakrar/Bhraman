@@ -629,7 +629,7 @@ export default function PlannerWorkspacePage() {
             )}
           </div>
 
-          <div className="flex-1 overflow-y-auto p-6 relative">
+          <div className="flex-1 flex flex-col min-h-0 p-6 relative">
             <AnimatePresence mode="wait">
               
               {/* Step A: Intake Q&A Form */}
@@ -639,7 +639,7 @@ export default function PlannerWorkspacePage() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
-                  className="space-y-6"
+                  className="space-y-6 overflow-y-auto flex-1 pr-1"
                 >
                   {/* Saved trips loader */}
                   {user && savedTrips.length > 0 && onboardingStep === 0 && (
@@ -903,10 +903,10 @@ export default function PlannerWorkspacePage() {
                   key="chat"
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="h-full flex flex-col justify-between"
+                  className="flex-1 flex flex-col min-h-0 justify-between"
                 >
                   {/* Chat messages */}
-                  <div className="flex-1 overflow-y-auto space-y-4 pr-1 min-h-[300px] max-h-[calc(100vh-280px)] pb-12">
+                  <div className="flex-1 overflow-y-auto space-y-4 pr-1 mb-2">
                     {chatMessages.map((msg, i) => (
                       <div
                         key={i}

@@ -1,85 +1,163 @@
-# TripMind — AI Travel Planner for India
+# ✈️ Bhraman — AI Travel Planner for India
 
-TripMind is a Next.js app that plans Indian getaways with AI-powered hotel scoring, INR budgets, and contestable recommendations. UI inspired by [Flighty](https://flighty.com/) — dark, premium, status-driven.
+[![Next.js](https://img.shields.io/badge/Next.js-16-blue?style=flat&logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=flat&logo=typescript)](https://www.typescriptlang.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-Database-green?style=flat&logo=supabase)](https://supabase.com/)
+[![Gemini](https://img.shields.io/badge/Gemini-2.5%20Pro-orange?style=flat&logo=google)](https://deepmind.google/technologies/gemini/)
 
-## Features
+**Bhraman** is a premium, high-performance Next.js application that plans tailored Indian getaways. It features real-time cost calculation, confidence-scored hotel selections, and a conversational Live AI Co-pilot to make instant modifications to your itinerary. 
 
-- **4-step trip wizard** — destination, companions, budget (INR), Indian constraints (Jain/veg, elderly-friendly, etc.)
-- **AI itinerary generation** — Gemini 2.5 Flash with rich fallback mock data
-- **Hotel comparison** — confidence scores, challenge AI to recalculate
-- **Full itinerary** — day-by-day plan, ₹ budget breakdown, packing list
-- **Supabase persistence** — trips, reasoning cache, challenge responses
+The user experience is inspired by **Flighty** — featuring a dark, premium, status-driven interface built for speed and responsiveness.
 
-## Quick Start
+---
 
-```bash
-npm install
-cp .env.example .env.local
-npm run dev
+## 🌟 Key Features
+
+- **⚡ Fast-Track 4-Step Intake**: Select destination, companions, custom duration (days), custom budget (in INR), and region-specific constraints (e.g., pure vegetarian, elderly-friendly, child-friendly).
+- **🤖 Live AI Co-pilot**: Dynamic chat interface that lets you ask questions (e.g., "My flight is late", "Make Day 2 simpler", "Add a spa session") to update and recalculate your travel plan instantly.
+- **📍 Interactive Map & Budget**: Renders exact latitude/longitude markers on a map for hotels and sightseeing spots, paired with an interactive cost calculator for flights, stays, dining, and custom expenses.
+- **🛡️ Contestable AI Stays**: Exposes the AI's internal reasoning score (e.g. 87/100). Click *"Why not this stay?"* to challenge the AI, input your constraints, and trigger automated re-scoring.
+- **📱 Native Mobile Responsiveness**: Stacks into a clean single-column view on mobile screens with a native tab-style switcher to toggle between the **Itinerary Board** and **Live Co-pilot Chat**.
+- **💾 Supabase Persistence**: Secure user login, persistent trip saving, and reasoning cache logging.
+
+---
+
+## 🚀 Quick Start
+
+1. **Clone and Install Dependencies**:
+   ```bash
+   npm install
+   ```
+
+2. **Configure Environment Variables**:
+   Create a `.env.local` file in the root directory:
+   ```env
+   NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+   SUPABASE_SERVICE_KEY=your-supabase-service-role-key
+   GEMINI_API_KEY=your-google-gemini-key
+   DEMO_MODE=false
+   ```
+
+3. **Run the Development Server**:
+   ```bash
+   npm run dev
+   ```
+   Open [http://localhost:3000](http://localhost:3000) to view the application.
+
+---
+
+## 🗄️ Database Setup (Supabase)
+
+To initialize your database tables and enable saving trips, run the following SQL script in your **Supabase SQL Editor**:
+
+```sql
+-- 1. Enable UUID generation extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- 2. Create Profiles table
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id         uuid PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email      text NOT NULL,
+  role       text NOT NULL DEFAULT 'customer',
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- 3. Create Trips table
+CREATE TABLE IF NOT EXISTS public.trips (
+  id             uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  created_at     timestamptz NOT NULL DEFAULT now(),
+  user_id        uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  destination    text,
+  preferences    jsonb NOT NULL DEFAULT '{}'::jsonb,
+  selected_hotel text,
+  itinerary      jsonb,
+  status         text NOT NULL DEFAULT 'pending'
+);
+
+-- 4. Create Reasoning Cache table
+CREATE TABLE IF NOT EXISTS public.reasoning_cache (
+  id         uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  trip_id    uuid NOT NULL REFERENCES public.trips(id) ON DELETE CASCADE,
+  stage_name text NOT NULL,
+  result     jsonb NOT NULL DEFAULT '{}'::jsonb,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- 5. Create Challenge Responses table
+CREATE TABLE IF NOT EXISTS public.challenge_responses (
+  id                       uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
+  trip_id                  uuid NOT NULL REFERENCES public.trips(id) ON DELETE CASCADE,
+  challenged_hotel_id      text NOT NULL,
+  user_constraint          text,
+  recalculated_confidence  integer,
+  score_breakdown          jsonb NOT NULL DEFAULT '{}'::jsonb,
+  delta_summary            text,
+  still_recommend_selected boolean DEFAULT true,
+  created_at               timestamptz NOT NULL DEFAULT now()
+);
+
+-- 6. Enable Row Level Security (RLS)
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.trips ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.reasoning_cache ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.challenge_responses ENABLE ROW LEVEL SECURITY;
+
+-- 7. Create open policies for client/service interaction
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'open_profiles_select') THEN
+    CREATE POLICY open_profiles_select ON public.profiles FOR SELECT USING (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'open_profiles_insert') THEN
+    CREATE POLICY open_profiles_insert ON public.profiles FOR INSERT WITH CHECK (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'open_profiles_update') THEN
+    CREATE POLICY open_profiles_update ON public.profiles FOR UPDATE USING (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'open_trips_all') THEN
+    CREATE POLICY open_trips_all ON public.trips FOR ALL USING (true) WITH CHECK (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'open_cache_all') THEN
+    CREATE POLICY open_cache_all ON public.reasoning_cache FOR ALL USING (true) WITH CHECK (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'open_challenges_all') THEN
+    CREATE POLICY open_challenges_all ON public.challenge_responses FOR ALL USING (true) WITH CHECK (true);
+  END IF;
+END $$;
+
+-- 8. Refresh Supabase REST Cache
+NOTIFY pgrst, 'reload schema';
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+---
 
-## Environment Variables
+## 🛠️ Tech Stack
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `NEXT_PUBLIC_SUPABASE_URL` | For DB | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | For DB | Supabase anon key |
-| `SUPABASE_SECRET_KEY` | For DB writes | Service role key (server-side) |
-| `GEMINI_API_KEY` | Optional | Google Gemini API key |
-| `DEMO_MODE` | Optional | Set `true` to use pre-built Indian mock data (no AI calls) |
+- **Framework**: Next.js 16 (App Router)
+- **Runtime & Language**: Node.js & TypeScript
+- **Styling**: Tailwind CSS v4, Framer Motion
+- **Database & Auth**: Supabase Database, Supabase Auth
+- **AI Engine**: Google Gemini API (Gemini 2.5 Pro / Flash models)
 
-**Demo mode works out of the box** — set `DEMO_MODE=true` and skip Gemini. The app includes full mock data for Goa, Manali, Udaipur, and Kerala.
+---
 
-## Supabase Setup
-
-1. Create a project at [supabase.com](https://supabase.com)
-2. Run `schema.sql` in the SQL Editor
-3. (Optional) Run `seed.sql` for sample trips
-4. Copy URL and keys to `.env.local`
-
-## Deploy to Vercel
-
-1. Push to GitHub
-2. Import project in [Vercel](https://vercel.com)
-3. Add environment variables from `.env.example`
-4. Deploy — no extra config needed
-
-Recommended production env:
+## 📂 Project Structure
 
 ```
-DEMO_MODE=true
-NEXT_PUBLIC_SUPABASE_URL=...
-NEXT_PUBLIC_SUPABASE_ANON_KEY=...
-SUPABASE_SECRET_KEY=...
+travel-engine/
+├── src/
+│   ├── app/                # Pages, layouts, and API routing
+│   │   ├── admin/          # Administrator control dashboard
+│   │   ├── api/            # Serverless functions (generate, setup, trips)
+│   │   ├── login/          # Auth login and registration screen
+│   │   └── plan/           # Main workspace split-screen planner
+│   ├── components/         # Reusable UI component blocks
+│   ├── lib/                # Database clients & AI generation engines
+│   └── types/              # Type Definitions for trips and stays
+├── schema.sql              # Database schema blueprint
+└── package.json            # Scripts & dependencies manifest
 ```
 
-Add `GEMINI_API_KEY` only if you want live AI generation.
+---
 
-## Demo Flow
-
-1. Landing → **Start Planning**
-2. Pick **Kerala Backwaters Cruise** + **Couple** + **Comfort** + **Pure Vegetarian**
-3. Watch the 8-stage reasoning animation
-4. Compare hotels → **Challenge** an alternative
-5. View full itinerary with ₹ budget and packing list
-
-## Tech Stack
-
-- Next.js 16 (App Router) · React 19 · TypeScript
-- Tailwind CSS v4 · shadcn/ui · Framer Motion
-- Supabase · Google Gemini AI
-
-## Project Structure
-
-```
-src/
-├── app/              # Pages & API routes
-├── components/       # UI components
-├── data/mockData.ts  # Indian destination dummy data
-├── lib/              # Supabase & AI helpers
-└── types/trip.ts     # Shared TypeScript types
-```
-
-Built for Prompt Wars 2026 🇮🇳
+*Designed and developed for Prompt Wars 2026 🏆*
