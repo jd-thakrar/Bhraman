@@ -294,18 +294,6 @@ export default function LoginPage() {
                   <>{isSignUp ? "Register Account" : "Access Console"} <ArrowRight className="w-4 h-4" /></>
                 )}
               </button>
-
-              {/* Bypass sandbox option */}
-              {!isSignUp && (
-                <button
-                  type="button"
-                  onClick={handleBypassLogin}
-                  className="w-full flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/[0.08] text-white/80 hover:text-white font-bold py-3.5 rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] mt-3"
-                >
-                  <UserCheck className="w-4 h-4 text-indigo-400" />
-                  Bypass Auth (Sandbox Mode)
-                </button>
-              )}
             </form>
           </motion.div>
 

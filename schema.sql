@@ -76,3 +76,5 @@ DO $$ BEGIN
     CREATE POLICY open_challenges_all ON public.challenge_responses FOR ALL USING (true) WITH CHECK (true);
   END IF;
 END $$;
+
+NOTIFY pgrst, 'reload schema';
