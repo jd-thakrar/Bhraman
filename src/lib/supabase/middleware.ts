@@ -26,7 +26,35 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  const { data: { user } } = await supabase.auth.getUser();
+  // Check bypass cookie
+  const bypassCookie = request.cookies.get("bhraman_bypass_session")?.value;
+  let user: any = null;
+  let userRole = "customer";
+
+  if (bypassCookie) {
+    try {
+      const parsed = JSON.parse(bypassCookie);
+      user = { id: parsed.id, email: parsed.email };
+      userRole = parsed.role;
+    } catch {}
+  }
+
+  if (!user) {
+    const { data: authData } = await supabase.auth.getUser();
+    user = authData?.user;
+    
+    if (user) {
+      try {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .single();
+        if (profile) userRole = profile.role;
+      } catch {}
+    }
+  }
+
   const path = request.nextUrl.pathname;
 
   // ── Route Protection ──────────────────────────────────────────────────────
@@ -36,20 +64,7 @@ export async function updateSession(request: NextRequest) {
     if (!user) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
-    
-    // Check role in profiles
-    try {
-      const { data: profile, error } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-        
-      if (error || !profile || profile.role !== "admin") {
-        return NextResponse.redirect(new URL("/plan", request.url));
-      }
-    } catch {
-      // Fallback: If database is not setup yet, redirect to plan
+    if (userRole !== "admin") {
       return NextResponse.redirect(new URL("/plan", request.url));
     }
   }
@@ -59,19 +74,9 @@ export async function updateSession(request: NextRequest) {
     if (!user) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
-    
-    // Redirect admin trying to access plan page to admin dashboard
-    try {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-        
-      if (profile?.role === "admin") {
-        return NextResponse.redirect(new URL("/admin", request.url));
-      }
-    } catch {}
+    if (userRole === "admin") {
+      return NextResponse.redirect(new URL("/admin", request.url));
+    }
   }
 
   // 3. Login Protection: Redirect logged-in users away from /login

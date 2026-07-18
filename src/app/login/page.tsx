@@ -21,6 +21,19 @@ export default function LoginPage() {
   // Auto redirect if already logged in based on role
   useEffect(() => {
     const checkUser = async () => {
+      const match = document.cookie.match(new RegExp('(^| )bhraman_bypass_session=([^;]+)'));
+      if (match) {
+        try {
+          const bu = JSON.parse(decodeURIComponent(match[2]));
+          if (bu.role === "admin") {
+            router.push("/admin");
+          } else {
+            router.push("/plan");
+          }
+          return;
+        } catch {}
+      }
+
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         try {
@@ -42,6 +55,32 @@ export default function LoginPage() {
     };
     checkUser();
   }, [router]);
+
+  const handleBypassLogin = () => {
+    setError(null);
+    setMessage(null);
+    try {
+      const demoEmail = email.trim() || "demo@bhraman.com";
+      const demoId = "00000000-0000-0000-0000-000000000001";
+      const session = {
+        id: demoId,
+        email: demoEmail,
+        role: role,
+      };
+
+      const date = new Date();
+      date.setTime(date.getTime() + (7 * 24 * 60 * 60 * 1000));
+      document.cookie = `bhraman_bypass_session=${encodeURIComponent(JSON.stringify(session))}; expires=${date.toUTCString()}; path=/`;
+
+      if (role === "admin") {
+        router.push("/admin");
+      } else {
+        router.push("/plan");
+      }
+    } catch (err: any) {
+      setError(`Bypass failed: ${err.message || err}`);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -255,6 +294,18 @@ export default function LoginPage() {
                   <>{isSignUp ? "Register Account" : "Access Console"} <ArrowRight className="w-4 h-4" /></>
                 )}
               </button>
+
+              {/* Bypass sandbox option */}
+              {!isSignUp && (
+                <button
+                  type="button"
+                  onClick={handleBypassLogin}
+                  className="w-full flex items-center justify-center gap-2 bg-white/5 hover:bg-white/10 border border-white/[0.08] text-white/80 hover:text-white font-bold py-3.5 rounded-xl transition-all hover:scale-[1.02] active:scale-[0.98] mt-3"
+                >
+                  <UserCheck className="w-4 h-4 text-indigo-400" />
+                  Bypass Auth (Sandbox Mode)
+                </button>
+              )}
             </form>
           </motion.div>
 
