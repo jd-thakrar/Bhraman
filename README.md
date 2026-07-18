@@ -11,10 +11,22 @@ The user experience is inspired by **Flighty** — featuring a dark, premium, st
 
 ---
 
-## 🌟 Key Features
+## 🔑 Demo Login Credentials
+
+You can log in to test both the Customer workspace and the Administrator control dashboard using these pre-configured credentials:
+
+| Role | Email | Password | Access Level |
+| :--- | :--- | :--- | :--- |
+| **👤 Customer** | `jd.thakrar05@gmail.com` | `123456` | Plan trips, chat with Co-pilot, save itineraries |
+| **🔑 Admin** | `chiragthakrardk@gmail.com` | `123456` | View all users' trips, trace AI confidence scores, trigger seeds |
+
+---
+
+## 🌟 Key Features & Animations
 
 - **⚡ Fast-Track 4-Step Intake**: Select destination, companions, custom duration (days), custom budget (in INR), and region-specific constraints (e.g., pure vegetarian, elderly-friendly, child-friendly).
-- **🤖 Live AI Co-pilot**: Dynamic chat interface that lets you ask questions (e.g., "My flight is late", "Make Day 2 simpler", "Add a spa session") to update and recalculate your travel plan instantly.
+- **🌀 Radar Processing Engine**: Shows an interactive radar sweep animation with live state updates (e.g. *"Goal Extraction"*, *"Constraint Filtering"*, *"Weighted Hotel Evaluation"*) while the Gemini AI compiles the itinerary.
+- **💬 Live AI Co-pilot**: Dynamic chat interface that lets you ask questions (e.g., "My flight is late", "Make Day 2 simpler", "Add a spa session") to update and recalculate your travel plan instantly.
 - **📍 Interactive Map & Budget**: Renders exact latitude/longitude markers on a map for hotels and sightseeing spots, paired with an interactive cost calculator for flights, stays, dining, and custom expenses.
 - **🛡️ Contestable AI Stays**: Exposes the AI's internal reasoning score (e.g. 87/100). Click *"Why not this stay?"* to challenge the AI, input your constraints, and trigger automated re-scoring.
 - **📱 Native Mobile Responsiveness**: Stacks into a clean single-column view on mobile screens with a native tab-style switcher to toggle between the **Itinerary Board** and **Live Co-pilot Chat**.
@@ -131,13 +143,14 @@ NOTIFY pgrst, 'reload schema';
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Tech Stack & Tools Used
 
-- **Framework**: Next.js 16 (App Router)
-- **Runtime & Language**: Node.js & TypeScript
-- **Styling**: Tailwind CSS v4, Framer Motion
+- **Framework**: Next.js 16 (App Router) with Turbopack compilation
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS v4, Framer Motion (for physics-based smooth UI transitions)
+- **Icons**: Lucide React
 - **Database & Auth**: Supabase Database, Supabase Auth
-- **AI Engine**: Google Gemini API (Gemini 2.5 Pro / Flash models)
+- **AI Model**: Google Gemini API (Gemini 2.5 Pro / Flash models) for structured JSON itinerary outputs
 
 ---
 
