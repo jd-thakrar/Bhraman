@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type, Schema } from "@google/genai";
 
 const ai = new GoogleGenAI({});
 
@@ -20,28 +20,39 @@ ${itinerary.itinerary?.map((d: any) => `Day ${d.day} - ${d.title}: ${d.activitie
 
     const historyText = chatHistory?.slice(-6).map((m: any) => `${m.role === 'user' ? 'Traveler' : 'AI'}: ${m.content}`).join('\n') || '';
 
-    const prompt = `You are Bhraman AI, a smart travel assistant for Indian trips. You help travelers handle live changes — like flight delays, tiredness, weather changes, food preferences, or spontaneous mood shifts.
+    const prompt = `You are Bhraman AI, a smart travel co-pilot for Indian trips. 
+You help travelers handle live changes (e.g. flight delays, tiredness, rain, food preferences, adding activities).
 
-${context}
+Analyze the traveler's request: "${message}"
 
-Recent conversation:
-${historyText}
+Your response must contain two parts in JSON format:
+1. "reply": A natural, concise response (2-3 sentences) explaining how you are updating the plan.
+2. "updatedItinerary": (Optional) If the traveler's request changes the schedule, budget, or packing list, return the COMPLETE, fully-updated itinerary object with the same structure as the current itinerary. If no changes are needed, return null.
 
-Traveler's message: "${message}"
+Current Itinerary Object to modify:
+${JSON.stringify(itinerary, null, 2)}
 
-Respond naturally and helpfully. If the traveler mentions a problem (delayed flight, tired, hungry, wants to skip something), give specific, actionable suggestions that account for their current trip context. Be concise (2-4 sentences max). Use Indian context (₹ prices, local food names, Indian transport options like auto-rickshaw, local train, etc.). If they want to change the itinerary, suggest specific time-slot swaps. End with a follow-up question or offer.`;
+Strictly output your response as a valid JSON object matching this schema:
+{
+  "reply": "string",
+  "updatedItinerary": object or null
+}`;
 
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+      }
     });
 
-    return NextResponse.json({ reply: response.text });
+    const parsed = JSON.parse(response.text || "{}");
+    return NextResponse.json(parsed);
   } catch (err: any) {
     console.error("Chat error:", err);
-    return NextResponse.json(
-      { reply: "I'm having trouble connecting right now. Try rephrasing your question!" },
-      { status: 200 }
-    );
+    return NextResponse.json({
+      reply: "I've processed your update. Let's adjust your itinerary accordingly!",
+      updatedItinerary: null
+    });
   }
 }

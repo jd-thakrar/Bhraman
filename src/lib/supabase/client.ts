@@ -1,41 +1,29 @@
 import { createBrowserClient } from "@supabase/ssr";
-import type { SupabaseClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
-let browserClient: SupabaseClient | null = null;
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+
+// Singleton client to avoid warning/performance penalties
+let clientInstance: SupabaseClient | null = null;
+
+function getClientInstance(): SupabaseClient {
+  if (!clientInstance) {
+    if (typeof window === "undefined") {
+      clientInstance = createClient(supabaseUrl, supabaseAnonKey);
+    } else {
+      clientInstance = createBrowserClient(supabaseUrl, supabaseAnonKey);
+    }
+  }
+  return clientInstance;
+}
+
+export const supabase = getClientInstance();
 
 export function isSupabaseConfigured(): boolean {
-  return Boolean(
-    process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  );
+  return Boolean(supabaseUrl && supabaseAnonKey);
 }
 
-export function createSupabaseBrowserClient(): SupabaseClient | null {
-  if (!isSupabaseConfigured()) return null;
-
-  if (!browserClient) {
-    browserClient = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-  }
-
-  return browserClient;
+export function createSupabaseBrowserClient(): SupabaseClient {
+  return supabase;
 }
-
-/** @deprecated Use createSupabaseBrowserClient() — kept for existing imports */
-export const supabase = {
-  get auth() {
-    const client = createSupabaseBrowserClient();
-    if (!client) {
-      throw new Error("Supabase is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.");
-    }
-    return client.auth;
-  },
-  from(table: string) {
-    const client = createSupabaseBrowserClient();
-    if (!client) {
-      throw new Error("Supabase is not configured.");
-    }
-    return client.from(table);
-  },
-};
