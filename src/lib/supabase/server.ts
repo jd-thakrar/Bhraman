@@ -18,7 +18,7 @@ export function getSupabaseServer(): SupabaseClient | null {
   if (!serviceClient) {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
     const key =
-      process.env.SUPABASE_SECRET_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+      process.env.SUPABASE_SERVICE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
     serviceClient = createClient(url, key, {
       auth: { persistSession: false, autoRefreshToken: false },
     });

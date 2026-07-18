@@ -1,8 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
-
-const inter = Inter({ variable: "--font-sans", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Bhraman — AI Travel Planner for India",
@@ -11,8 +8,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} h-full`}>
-      <body className="min-h-full bg-[#0A0B0F] text-[#F0F2F8] antialiased">{children}</body>
+    <html lang="en" className="h-full">
+      <body className="min-h-full bg-[#0A0B0F] text-[#F0F2F8] antialiased" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' }}>
+        {children}
+      </body>
     </html>
   );
 }
