@@ -23,15 +23,19 @@ export default function LoginPage() {
     const checkUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .single();
-        
-        if (profile?.role === "admin") {
-          router.push("/admin");
-        } else {
+        try {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .single();
+          
+          if (profile?.role === "admin") {
+            router.push("/admin");
+          } else {
+            router.push("/plan");
+          }
+        } catch {
           router.push("/plan");
         }
       }
@@ -51,23 +55,25 @@ export default function LoginPage() {
         const { data: authData, error: authErr } = await supabase.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
         });
         if (authErr) throw authErr;
 
         if (authData?.user) {
-          // Create role-based profile
-          const { error: profileErr } = await supabase
-            .from("profiles")
-            .upsert({
-              id: authData.user.id,
-              email,
-              role: role,
-            });
-          if (profileErr) console.error("Profile creation error:", profileErr);
+          // Create role-based profile — catch errors so missing tables don't block registration
+          try {
+            await supabase
+              .from("profiles")
+              .upsert({
+                id: authData.user.id,
+                email,
+                role: role,
+              });
+          } catch (profileErr) {
+            console.error("Profile creation error, ignoring:", profileErr);
+          }
         }
 
-        setMessage("✓ Account created! You can now sign in.");
+        setMessage("✓ Account created successfully! Please sign in.");
         setIsSignUp(false);
       } else {
         // Sign in user
@@ -78,22 +84,31 @@ export default function LoginPage() {
         if (authErr) throw authErr;
 
         if (authData?.user) {
-          // Fetch user profile role
-          const { data: profile, error: profileErr } = await supabase
-            .from("profiles")
-            .select("role")
-            .eq("id", authData.user.id)
-            .single();
+          let userRole = "customer";
+          
+          // Query role from profiles — catch any missing table error gracefully
+          try {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("role")
+              .eq("id", authData.user.id)
+              .single();
 
-          if (profileErr || !profile) {
-            // Create a default profile if missing
-            await supabase.from("profiles").upsert({
-              id: authData.user.id,
-              email,
-              role: "customer"
-            });
-            router.push("/plan");
-          } else if (profile.role === "admin") {
+            if (profile) {
+              userRole = profile.role;
+            } else {
+              // Try creating a default profile if missing
+              await supabase.from("profiles").upsert({
+                id: authData.user.id,
+                email,
+                role: "customer"
+              });
+            }
+          } catch (profileErr) {
+            console.error("Profile fetch error, falling back to customer:", profileErr);
+          }
+
+          if (userRole === "admin") {
             router.push("/admin");
           } else {
             router.push("/plan");
@@ -252,12 +267,6 @@ export default function LoginPage() {
               {isSignUp ? "Sign In" : "Register"}
             </button>
           </p>
-
-          <div className="text-center mt-4">
-            <Link href="/plan" className="text-xs text-white/20 hover:text-white/40 transition-colors font-medium">
-              Continue as Guest Client →
-            </Link>
-          </div>
         </div>
       </div>
 
