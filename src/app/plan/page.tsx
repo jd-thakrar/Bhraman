@@ -103,6 +103,7 @@ export default function PlannerWorkspacePage() {
 
   // Right board tabs: "itinerary" | "map" | "hotels"
   const [activeTab, setActiveTab] = useState<"itinerary" | "map" | "hotels">("itinerary");
+  const [mobileTab, setMobileTab] = useState<"chat" | "board">("board");
 
   // Chat window state
   const [chatInput, setChatInput] = useState("");
@@ -574,13 +575,41 @@ export default function PlannerWorkspacePage() {
         </div>
       </header>
 
+      {/* Mobile view switcher for generated trip */}
+      {appStatus === "generated" && (
+        <div className="flex lg:hidden bg-[#0A0B0F] border-b border-white/[0.06] p-1.5 sticky top-14 z-20">
+          <button
+            onClick={() => setMobileTab("board")}
+            className={`flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all ${
+              mobileTab === "board"
+                ? "bg-indigo-500 text-white shadow-md shadow-indigo-500/20"
+                : "text-white/40"
+            }`}
+          >
+            Itinerary & Board
+          </button>
+          <button
+            onClick={() => setMobileTab("chat")}
+            className={`flex-1 text-center py-2 text-xs font-bold rounded-lg transition-all ${
+              mobileTab === "chat"
+                ? "bg-indigo-500 text-white shadow-md shadow-indigo-500/20"
+                : "text-white/40"
+            }`}
+          >
+            Live Co-pilot Chat
+          </button>
+        </div>
+      )}
+
       {/* Main Split Screen Area */}
       <div className="flex-1 flex flex-col lg:flex-row relative z-10 overflow-hidden">
         
         {/* ========================================================
             LEFT COLUMN (Onboarding Q&A / Live Chat Co-pilot - 40% width)
            ======================================================== */}
-        <div className="w-full lg:w-[420px] shrink-0 border-r border-white/[0.06] bg-[#0C0D12] flex flex-col overflow-hidden relative">
+        <div className={`w-full lg:w-[420px] shrink-0 border-r border-white/[0.06] bg-[#0C0D12] flex flex-col overflow-hidden relative ${
+          appStatus === "generated" && mobileTab !== "chat" ? "hidden lg:flex" : "flex"
+        }`}>
           
           {/* Status indicators / wizard progress */}
           <div className="p-4 border-b border-white/[0.05] bg-[#090A0E] flex items-center justify-between">
@@ -938,7 +967,11 @@ export default function PlannerWorkspacePage() {
         {/* ========================================================
             RIGHT COLUMN (Dynamic Apple-Like Planner Board - 60% width)
            ======================================================== */}
-        <div className="flex-1 bg-[#0A0B0F] flex flex-col overflow-hidden relative">
+        <div className={`flex-1 bg-[#0A0B0F] flex flex-col overflow-hidden relative ${
+          appStatus === "generated" && mobileTab !== "board" ? "hidden lg:flex" : "flex"
+        } ${
+          appStatus !== "generated" ? "hidden lg:flex" : "flex"
+        }`}>
           
           {/* Main workspace layout builder */}
           <AnimatePresence mode="wait">
