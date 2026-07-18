@@ -364,18 +364,41 @@ export default function PlannerWorkspacePage() {
     }
   };
   const handleSaveTrip = async () => {
-    if (!tripId) return;
     setSaveStatus("saving");
     try {
-      const { error } = await supabase
-        .from("trips")
-        .update({
-          itinerary: itinerary,
-          selected_hotel: itinerary?.hotels?.[0]?.name || "",
-        })
-        .eq("id", tripId);
+      let currentId = tripId;
+      if (!currentId) {
+        // Create new trip row in Supabase
+        const { data: newTrip, error: insertErr } = await supabase
+          .from("trips")
+          .insert({
+            destination: prefs.destination || itinerary.destination || "Goa, India",
+            preferences: prefs,
+            selected_hotel: itinerary?.hotels?.[0]?.name || "",
+            itinerary: itinerary,
+            status: "generated",
+            user_id: user.id
+          })
+          .select("id")
+          .single();
 
-      if (error) throw error;
+        if (insertErr) throw insertErr;
+        currentId = newTrip.id;
+        setTripId(newTrip.id);
+      } else {
+        // Update existing trip row
+        const { error } = await supabase
+          .from("trips")
+          .update({
+            itinerary: itinerary,
+            selected_hotel: itinerary?.hotels?.[0]?.name || "",
+            preferences: prefs,
+          })
+          .eq("id", currentId);
+
+        if (error) throw error;
+      }
+
       setSaveStatus("saved");
       setTimeout(() => setSaveStatus("idle"), 2500);
       if (user) loadSavedTrips(user.id);
@@ -893,7 +916,7 @@ export default function PlannerWorkspacePage() {
 
                   {/* Save action & Budget preview status */}
                   <div className="flex items-center gap-4">
-                    {tripId && (
+                    {user && (
                       <button
                         onClick={handleSaveTrip}
                         disabled={saveStatus === "saving"}
@@ -1104,7 +1127,7 @@ export default function PlannerWorkspacePage() {
                             style={{ border: 0, filter: "invert(90%) hue-rotate(180deg)" }}
                             loading="lazy"
                             allowFullScreen
-                            src={`https://www.google.com/maps/embed/v1/place?key=${process.env.NEXT_PUBLIC_MAPS_API_KEY || ''}&q=${encodeURIComponent(prefs.destination || 'India')}`}
+                            src={`https://maps.google.com/maps?q=${encodeURIComponent((itinerary?.hotels?.[0]?.name || '') + ' ' + (prefs.destination || ''))}&t=&z=15&ie=UTF8&iwloc=&output=embed`}
                           />
                         </div>
                         <div className="flex items-center gap-2 mt-3 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-bold px-3 py-2 rounded-xl">
