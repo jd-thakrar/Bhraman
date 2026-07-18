@@ -9,7 +9,7 @@ import {
   Plane, ArrowRight, Check, Sparkles, MapPin, Navigation, Map,
   ShieldCheck, ShieldAlert, DollarSign, Calendar, Sparkle, Send,
   Loader2, Info, Compass, HelpCircle, Star, X, CheckSquare, Square,
-  MapPinned, ClipboardList, Bed, LogOut, Edit3, Plus, Trash2, FolderOpen
+  MapPinned, ClipboardList, Bed, LogOut, Edit3, Plus, Trash2, FolderOpen, Save
 } from "lucide-react";
 import { GOA_MOCK_DATA } from "@/data/mockData";
 
@@ -110,6 +110,7 @@ export default function PlannerWorkspacePage() {
 
   // Re-evaluation challenges state
   const [challengeStates, setChallengeStates] = useState<Record<string, any>>({});
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
 
   // ── Load User & Saved Trips ──────────────────────────────────────────
   const loadSavedTrips = useCallback(async (userId: string) => {
@@ -360,6 +361,28 @@ export default function PlannerWorkspacePage() {
           summary: "Alternative stay score improved slightly with this preference constraint.",
         },
       }));
+    }
+  };
+  const handleSaveTrip = async () => {
+    if (!tripId) return;
+    setSaveStatus("saving");
+    try {
+      const { error } = await supabase
+        .from("trips")
+        .update({
+          itinerary: itinerary,
+          selected_hotel: itinerary?.hotels?.[0]?.name || "",
+        })
+        .eq("id", tripId);
+
+      if (error) throw error;
+      setSaveStatus("saved");
+      setTimeout(() => setSaveStatus("idle"), 2500);
+      if (user) loadSavedTrips(user.id);
+    } catch (err) {
+      console.error("Save error:", err);
+      setSaveStatus("error");
+      setTimeout(() => setSaveStatus("idle"), 2500);
     }
   };
 
@@ -868,8 +891,43 @@ export default function PlannerWorkspacePage() {
                     })}
                   </div>
 
-                  {/* Budget preview status */}
-                  <div className="flex items-center gap-3">
+                  {/* Save action & Budget preview status */}
+                  <div className="flex items-center gap-4">
+                    {tripId && (
+                      <button
+                        onClick={handleSaveTrip}
+                        disabled={saveStatus === "saving"}
+                        className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold border transition-all hover:scale-[1.02] active:scale-[0.98] ${
+                          saveStatus === "saved"
+                            ? "bg-green-500/10 border-green-500/35 text-green-400 font-black"
+                            : saveStatus === "error"
+                            ? "bg-red-500/10 border-red-500/35 text-red-400 font-black"
+                            : "bg-indigo-500 hover:bg-indigo-400 border-indigo-500 text-white shadow-lg shadow-indigo-500/20 active:scale-95 disabled:opacity-50"
+                        }`}
+                      >
+                        {saveStatus === "saving" ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            Saving...
+                          </>
+                        ) : saveStatus === "saved" ? (
+                          <>
+                            <Check className="w-3.5 h-3.5 animate-pulse" />
+                            Saved to Cloud!
+                          </>
+                        ) : saveStatus === "error" ? (
+                          <>
+                            <ShieldAlert className="w-3.5 h-3.5" />
+                            Failed to Save
+                          </>
+                        ) : (
+                          <>
+                            <Save className="w-3.5 h-3.5" />
+                            Save Changes
+                          </>
+                        )}
+                      </button>
+                    )}
                     <div className="text-right">
                       <div className="text-[9px] font-black text-white/30 uppercase tracking-wider">Est. Budget</div>
                       <div className="text-lg font-black text-white">₹{itinerary?.budget?.total?.toLocaleString()}</div>
